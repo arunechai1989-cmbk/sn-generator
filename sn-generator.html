@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SN Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --paper: #ECE8DC;
+    --ink: #1E1B16;
+    --ink-soft: #5B564C;
+    --line: #C9C2AE;
+    --amber: #C7780A;
+    --amber-deep: #A15E06;
+    --err: #B23A2E;
+    --card: #F6F3E9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      repeating-linear-gradient(135deg, rgba(0,0,0,0.015) 0 2px, transparent 2px 6px),
+      var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans Thai','IBM Plex Mono',sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .wrap{ width:100%; max-width:600px; }
+
+  .kicker{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.14em;
+    color:var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .kicker .dot{width:6px;height:6px;background:var(--amber);border-radius:50%;flex:none;}
+
+  h1{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:26px;
+    letter-spacing:-0.01em;
+    margin:0 0 4px;
+  }
+  .sub{
+    font-size:14px;
+    color:var(--ink-soft);
+    margin:0 0 22px;
+    max-width:50ch;
+    line-height:1.5;
+  }
+
+  .sets{ display:flex; flex-direction:column; gap:12px; margin-bottom:14px; }
+
+  .set-card{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:16px 16px 14px;
+  }
+  .set-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+  }
+  .set-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    color:var(--amber-deep);
+    background:rgba(199,120,10,0.12);
+    padding:3px 8px;
+    border-radius:2px;
+  }
+  .remove-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    background:none;
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:4px 9px;
+    cursor:pointer;
+  }
+  .remove-btn:hover{ color:var(--err); border-color:var(--err); }
+
+  .field-row{ margin-bottom:12px; }
+  .field-row:last-child{ margin-bottom:0; }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .three-col{ display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:10px; }
+  .four-col{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+
+  label{
+    display:block;
+    font-size:10.5px;
+    font-family:'IBM Plex Mono',monospace;
+    letter-spacing:0.05em;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  input[type=text], input[type=number]{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    background:#FFFEFA;
+    color:var(--ink);
+    outline:none;
+  }
+  input:focus{
+    border-color:var(--amber);
+    box-shadow:0 0 0 3px rgba(199,120,10,0.14);
+  }
+
+  .set-preview{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:10px;
+  }
+  .set-preview b{ color:var(--ink); font-weight:600; }
+  .set-preview.err{ color:var(--err); }
+
+  .add-row-btn{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    padding:11px;
+    border:1px dashed var(--line);
+    border-radius:2px;
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    margin-bottom:20px;
+  }
+  .add-row-btn:hover{ border-color:var(--amber); color:var(--amber-deep); }
+
+  .divider{ border:none; border-top:1px dashed var(--line); margin:20px 0; }
+
+  .actions{ display:flex; gap:10px; flex-wrap:wrap; }
+  button.main-btn, button.util-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    letter-spacing:0.02em;
+    padding:11px 16px;
+    border-radius:2px;
+    cursor:pointer;
+  }
+  button.main-btn{
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+  }
+  button.util-btn{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--line);
+  }
+  button:disabled{ opacity:0.4; cursor:not-allowed; }
+  button:active:not(:disabled){ transform:translateY(1px); }
+
+  .result-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin:26px 0 10px;
+  }
+  .result-head .count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .result-head .count b{ color:var(--amber-deep); }
+
+  .list-box{
+    max-height:300px;
+    overflow-y:auto;
+    border:1px solid var(--line);
+    background:#FFFEFA;
+    border-radius:2px;
+  }
+  .list-box ol{ margin:0; padding:0; list-style:none; font-family:'IBM Plex Mono',monospace; font-size:13px; }
+  .list-box li{ display:flex; gap:10px; padding:6px 12px; border-bottom:1px solid #EFEBDD; align-items:center; }
+  .list-box li:last-child{ border-bottom:none; }
+  .list-box li:nth-child(even){ background:#FBF9F1; }
+  .list-box .idx{ color:var(--line); min-width:32px; text-align:right; }
+  .list-box .code{ color:var(--ink); font-weight:500; flex:1; }
+  .list-box .grp{
+    font-size:10.5px; color:var(--amber-deep);
+    background:rgba(199,120,10,0.1); padding:2px 6px; border-radius:2px;
+  }
+
+  .empty{ padding:28px 12px; text-align:center; color:var(--ink-soft); font-size:13px; }
+
+  .toast{
+    position:fixed; bottom:22px; left:50%;
+    transform:translateX(-50%) translateY(12px);
+    background:var(--ink); color:var(--paper);
+    font-family:'IBM Plex Mono',monospace; font-size:12px;
+    padding:9px 16px; border-radius:3px;
+    opacity:0; transition:opacity .18s ease, transform .18s ease;
+    pointer-events:none; max-width:88vw; text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+
+  .default-banner{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:rgba(199,120,10,0.1);
+    border:1px solid var(--amber);
+    border-radius:2px;
+    padding:9px 12px;
+    margin-bottom:12px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--amber-deep);
+  }
+  .default-banner button{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--amber-deep);
+    background:none;
+    border:1px solid var(--amber);
+    border-radius:2px;
+    padding:4px 9px;
+    cursor:pointer;
+    flex:none;
+  }
+  .set-head{ flex-wrap:wrap; gap:8px; }
+  .set-head-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .setdefault-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    background:none;
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:4px 9px;
+    cursor:pointer;
+  }
+  .setdefault-btn:hover{ color:var(--amber-deep); border-color:var(--amber); }
+
+
+  .paste-row{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px dashed var(--line);
+  }
+  .paste-row textarea{
+    width:100%;
+    min-height:110px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13.5px;
+    line-height:1.6;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    background:#FFFEFA;
+    color:var(--ink);
+    resize:vertical;
+    margin-bottom:8px;
+    outline:none;
+  }
+  .paste-row textarea:focus{
+    border-color:var(--amber);
+    box-shadow:0 0 0 3px rgba(199,120,10,0.14);
+  }
+  .detect-btn{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    padding:9px;
+    border:1px dashed var(--line);
+    border-radius:2px;
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .detect-btn:hover{ border-color:var(--amber); color:var(--amber-deep); }
+
+
+  .list-box li.dup-row{ background:rgba(178,58,46,0.08); }
+  .list-box li.dup-row .code{ color:var(--err); font-weight:700; }
+  .dup-tag{
+    font-size:10px;
+    color:#fff;
+    background:var(--err);
+    padding:2px 6px;
+    border-radius:2px;
+    flex:none;
+  }
+  .count .dup-warn{ color:var(--err); font-weight:600; }
+
+
+  .dup-controls{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:-4px 0 12px;
+    padding:10px 12px;
+    background:rgba(178,58,46,0.06);
+    border:1px solid rgba(178,58,46,0.3);
+    border-radius:2px;
+  }
+  .dup-filter-label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--err);
+    cursor:pointer;
+    margin:0;
+  }
+  .dup-filter-label input{ margin:0; accent-color:var(--err); }
+  .autofix-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:7px 12px;
+    border-radius:2px;
+    border:1px solid var(--err);
+    background:var(--err);
+    color:#fff;
+    cursor:pointer;
+  }
+  .autofix-btn:hover{ opacity:0.9; }
+
+  @media (max-width:420px){
+    .three-col, .four-col{ grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker"><span class="dot"></span>SERIAL NUMBER UTILITY — BATCH MODE</div>
+  <h1>SN Generator</h1>
+  <p class="sub">ตั้งได้หลายชุดพร้อมกัน แต่ละชุดมี prefix / ช่วงเลข / จำนวนหลัก / step เป็นของตัวเอง กดสร้างรวมทีเดียว copy หรือโหลดไฟล์ได้ครบทุกชุด</p>
+
+  <div class="default-banner" id="defaultBanner">
+    <span id="defaultBannerText"></span>
+    <button id="clearDefaultBtn">ล้างค่าเริ่มต้น</button>
+  </div>
+  <div class="sets" id="setsContainer"></div>
+  <div style="display:flex; gap:10px; margin-bottom:20px;">
+    <button class="add-row-btn" id="addSetBtn" style="margin-bottom:0;">+ เพิ่มชุด SN</button>
+    <button class="add-row-btn" id="resetBtn" style="margin-bottom:0; max-width:120px; color:var(--err); border-color:var(--err);">รีเซ็ตทั้งหมด</button>
+  </div>
+
+  <div class="actions">
+    <button class="main-btn" id="genBtn">สร้างรายการทั้งหมด</button>
+    <button class="util-btn" id="copyBtn" disabled>คัดลอกทั้งหมด</button>
+    <button class="util-btn" id="csvBtn" disabled>ดาวน์โหลด CSV</button>
+    <button class="util-btn" id="xlsxBtn" disabled>ดาวน์โหลด Excel</button>
+  </div>
+
+  <div class="result-head">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);">RESULT</span>
+    <span class="count" id="countLabel">ยังไม่ได้สร้างรายการ</span>
+  </div>
+
+  <div class="dup-controls" id="dupControls">
+    <label class="dup-filter-label"><input type="checkbox" id="dupFilterToggle"> แสดงเฉพาะที่ชนกัน</label>
+    <button class="autofix-btn" id="autofixBtn">แก้อัตโนมัติ (เลื่อน range ให้ไม่ชนกัน)</button>
+  </div>
+
+  <div class="list-box">
+    <div class="empty" id="emptyState">กด "สร้างรายการทั้งหมด" เพื่อดูผลลัพธ์ที่นี่</div>
+    <ol id="listOut" style="display:none;"></ol>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const setsContainer = document.getElementById('setsContainer');
+  const countLabel = document.getElementById('countLabel');
+  const listOut = document.getElementById('listOut');
+  const emptyState = document.getElementById('emptyState');
+  const copyBtn = document.getElementById('copyBtn');
+  const csvBtn = document.getElementById('csvBtn');
+  const xlsxBtn = document.getElementById('xlsxBtn');
+  const toastEl = document.getElementById('toast');
+
+  let setCounter = 0;
+  let currentRows = []; // {group, code}
+  let currentCodeCounts = {};
+  let filterDupOnly = false;
+  let defaultTemplate = null;
+
+  function updateDefaultBanner(){
+    const banner = document.getElementById('defaultBanner');
+    const text = document.getElementById('defaultBannerText');
+    if(!defaultTemplate){
+      banner.style.display = 'none';
+      return;
+    }
+    banner.style.display = 'flex';
+    const p = defaultTemplate.prefix || '(ไม่มี prefix)';
+    text.textContent = `ค่าเริ่มต้นตอนนี้: ${p} · ${defaultTemplate.start}-${defaultTemplate.end} · step ${defaultTemplate.step} · ${defaultTemplate.digits} หลัก — ใช้ตั้งค่าให้ชุดใหม่ที่เพิ่มต่อไป`;
+  }
+
+  function pad(n, digits){
+    const s = String(Math.abs(n));
+    const padded = s.padStart(digits, '0');
+    return n < 0 ? '-' + padded : padded;
+  }
+
+  function splitTrailingDigits(s){
+    let i = s.length;
+    while(i > 0 && /\d/.test(s[i-1])) i--;
+    return { prefix: s.slice(0, i), numStr: s.slice(i) };
+  }
+
+  function detectFromPaste(card){
+    const textarea = card.querySelector('.paste-input');
+    const lines = textarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if(lines.length < 1){ showToast('วางตัวอย่าง SN อย่างน้อย 1 บรรทัดก่อน'); return; }
+
+    const parsed = lines.map(splitTrailingDigits).filter(p => p.numStr.length > 0);
+    if(parsed.length === 0){ showToast('หาเลขวิ่งท้าย SN ไม่เจอ ลองเช็ครูปแบบอีกที'); return; }
+
+    const prefixes = [...new Set(parsed.map(p => p.prefix))];
+    const digitLens = [...new Set(parsed.map(p => p.numStr.length))];
+    const nums = parsed.map(p => parseInt(p.numStr, 10));
+    const start = Math.min(...nums);
+    const end = Math.max(...nums);
+    const digits = Math.max(...digitLens);
+
+    let warnings = [];
+    if(prefixes.length > 1){
+      warnings.push(`prefix ไม่ตรงกันทุกบรรทัด (เจอ ${prefixes.length} แบบ) ใช้ "${prefixes[0]}" จากบรรทัดแรกให้`);
+    }
+    if(digitLens.length > 1){
+      warnings.push(`จำนวนหลักไม่เท่ากันทุกบรรทัด ใช้ ${digits} หลัก (ค่ามากสุดที่เจอ)`);
+    }
+
+    let step = 1;
+    if(parsed.length > 2){
+      const sortedNums = [...nums].sort((a, b) => a - b);
+      const diffs = [];
+      for(let i = 1; i < sortedNums.length; i++) diffs.push(sortedNums[i] - sortedNums[i - 1]);
+      const freq = {};
+      diffs.forEach(d => { freq[d] = (freq[d] || 0) + 1; });
+      let best = diffs[0], bestCount = 0;
+      Object.entries(freq).forEach(([d, c]) => { if(c > bestCount){ best = parseInt(d, 10); bestCount = c; } });
+      step = best || 1;
+      const inconsistent = diffs.some(d => d !== step);
+      if(inconsistent) warnings.push(`ช่วงห่างระหว่างเลขไม่คงที่ทุกคู่ ระบบเดา step เป็น ${step} ให้ ลองเช็คอีกที`);
+    }
+
+    card.querySelector('.f-prefix').value = prefixes[0];
+    card.querySelector('.f-start').value = start;
+    card.querySelector('.f-end').value = end;
+    card.querySelector('.f-step').value = step;
+    card.querySelector('.f-digits').value = digits;
+    updateSetPreview(card);
+
+    const summary = `ตรวจพบ: ${prefixes[0]}${String(start).padStart(digits, '0')} ถึง ${prefixes[0]}${String(end).padStart(digits, '0')} · step ${step} · ${digits} หลัก`;
+    showToast(warnings.length ? summary + ' — ' + warnings.join(' / ') : summary);
+  }
+
+  function makeSetCard(defaults){
+    setCounter += 1;
+    const id = setCounter;
+    const d = Object.assign({ prefix:'', start:1, end:10, step:1, digits:5 }, defaults || {});
+    const card = document.createElement('div');
+    card.className = 'set-card';
+    card.dataset.id = id;
+    card.innerHTML = `
+      <div class="set-head">
+        <span class="set-tag">ชุดที่ ${id}</span>
+        <div class="set-head-actions">
+          <button class="setdefault-btn" data-setdefault="${id}">ตั้งเป็นค่าเริ่มต้น</button>
+          <button class="remove-btn" data-remove="${id}">ลบชุดนี้</button>
+        </div>
+      </div>
+      <div class="field-row">
+        <label>PREFIX</label>
+        <input type="text" class="f-prefix" value="${d.prefix}" spellcheck="false">
+      </div>
+      <div class="field-row three-col">
+        <div><label>START</label><input type="number" class="f-start" value="${d.start}"></div>
+        <div><label>END</label><input type="number" class="f-end" value="${d.end}"></div>
+        <div><label>STEP</label><input type="number" class="f-step" value="${d.step}" min="1"></div>
+      </div>
+      <div class="field-row">
+        <label>DIGITS</label>
+        <input type="number" class="f-digits" value="${d.digits}" min="1" max="12">
+      </div>
+      <div class="paste-row">
+        <label>วาง SN ตัวอย่าง (2 บรรทัดขึ้นไป) แล้วให้ระบบเดาค่าให้</label>
+        <textarea class="paste-input" rows="5" placeholder="เช่น
+S8N2606A00129
+S8N2606A00134"></textarea>
+        <button class="detect-btn" data-detect="${id}">ตรวจจับอัตโนมัติ</button>
+      </div>
+      <div class="set-preview" data-preview></div>
+    `;
+    setsContainer.appendChild(card);
+    const inputs = card.querySelectorAll('input');
+    inputs.forEach(inp => inp.addEventListener('input', () => updateSetPreview(card)));
+    card.querySelector('[data-remove]').addEventListener('click', () => {
+      if(setsContainer.children.length <= 1){
+        showToast('ต้องมีอย่างน้อย 1 ชุด');
+        return;
+      }
+      card.remove();
+    });
+    card.querySelector('[data-setdefault]').addEventListener('click', () => {
+      const s = readSet(card);
+      defaultTemplate = { prefix: s.prefix, start: s.start, end: s.end, step: s.step, digits: s.digits };
+      updateDefaultBanner();
+      showToast('ตั้งค่าเริ่มต้นจากชุดที่ ' + id + ' แล้ว');
+    });
+    card.querySelector('[data-detect]').addEventListener('click', () => detectFromPaste(card));
+    updateSetPreview(card);
+    return card;
+  }
+
+  function readSet(card){
+    const prefix = card.querySelector('.f-prefix').value.trim();
+    const start = parseInt(card.querySelector('.f-start').value, 10);
+    const end = parseInt(card.querySelector('.f-end').value, 10);
+    let step = parseInt(card.querySelector('.f-step').value, 10);
+    const digits = Math.max(1, parseInt(card.querySelector('.f-digits').value, 10) || 1);
+    if(!step || step === 0) step = 1;
+    step = Math.abs(step);
+    return { prefix, start, end, step, digits, tag: 'ชุด' + card.dataset.id };
+  }
+
+  function buildOne(set){
+    if(Number.isNaN(set.start) || Number.isNaN(set.end)) return { error:'ใส่ START/END ให้ครบ' };
+    const list = [];
+    if(set.start <= set.end){
+      for(let n=set.start; n<=set.end; n+=set.step) list.push(set.prefix + pad(n, set.digits));
+    } else {
+      for(let n=set.start; n>=set.end; n-=set.step) list.push(set.prefix + pad(n, set.digits));
+    }
+    return { list };
+  }
+
+  function updateSetPreview(card){
+    const preview = card.querySelector('[data-preview]');
+    const set = readSet(card);
+    const r = buildOne(set);
+    if(r.error){
+      preview.textContent = r.error;
+      preview.classList.add('err');
+      return;
+    }
+    preview.classList.remove('err');
+    if(r.list.length === 0){
+      preview.textContent = 'ไม่มีรายการในช่วงนี้';
+      return;
+    }
+    preview.innerHTML = r.list.length === 1
+      ? `<b>${r.list[0]}</b>`
+      : `<b>${r.list[0]}</b> … <b>${r.list[r.list.length-1]}</b> (${r.list.length} รายการ)`;
+  }
+
+  function renderCombined(rows){
+    currentRows = rows;
+    currentCodeCounts = {};
+    rows.forEach(r => { currentCodeCounts[r.code] = (currentCodeCounts[r.code] || 0) + 1; });
+    filterDupOnly = false;
+    document.getElementById('dupFilterToggle').checked = false;
+    renderList();
+    return rows.filter(r => currentCodeCounts[r.code] > 1).length;
+  }
+
+  function renderList(){
+    const rows = currentRows;
+    const dupControls = document.getElementById('dupControls');
+    if(rows.length === 0){
+      emptyState.style.display = 'block';
+      emptyState.textContent = 'ไม่มีรายการเลย ลองตรวจสอบ START/END ของแต่ละชุด';
+      listOut.style.display = 'none';
+      countLabel.textContent = 'ยังไม่ได้สร้างรายการ';
+      dupControls.style.display = 'none';
+      [copyBtn, csvBtn, xlsxBtn].forEach(b => b.disabled = true);
+      return;
+    }
+    const dupCount = rows.filter(r => currentCodeCounts[r.code] > 1).length;
+    dupControls.style.display = dupCount > 0 ? 'flex' : 'none';
+
+    const visible = filterDupOnly ? rows.filter(r => currentCodeCounts[r.code] > 1) : rows;
+
+    emptyState.style.display = 'none';
+    listOut.style.display = 'block';
+    listOut.innerHTML = visible.map(r => {
+      const isDup = currentCodeCounts[r.code] > 1;
+      return `<li class="${isDup ? 'dup-row' : ''}"><span class="idx">${r.origIdx}</span><span class="code">${r.code}</span>${isDup ? '<span class="dup-tag">ซ้ำ</span>' : ''}<span class="grp">${r.group}</span></li>`;
+    }).join('');
+
+    let countText = dupCount > 0
+      ? `ทั้งหมด <b>${rows.length}</b> รายการ · <span class="dup-warn">ชนกัน ${dupCount} รายการ</span>`
+      : `ทั้งหมด <b>${rows.length}</b> รายการ จาก <b>${setsContainer.children.length}</b> ชุด`;
+    if(filterDupOnly) countText += ` · กำลังกรองเฉพาะที่ชนกัน (${visible.length})`;
+    countLabel.innerHTML = countText;
+    [copyBtn, csvBtn, xlsxBtn].forEach(b => b.disabled = false);
+  }
+
+  document.getElementById('dupFilterToggle').addEventListener('change', (e) => {
+    filterDupOnly = e.target.checked;
+    renderList();
+  });
+
+  function autoFixOverlaps(){
+    const cards = Array.from(setsContainer.querySelectorAll('.set-card'));
+    const usedEndByKey = {};
+    let changed = false;
+    cards.forEach(card => {
+      const s = readSet(card);
+      if(Number.isNaN(s.start) || Number.isNaN(s.end)) return;
+      const key = s.prefix + '|' + s.digits;
+      const ascending = s.start <= s.end;
+      const lo = Math.min(s.start, s.end);
+      const hi = Math.max(s.start, s.end);
+      const usedEnd = usedEndByKey[key];
+      if(usedEnd !== undefined && lo <= usedEnd){
+        const span = hi - lo;
+        const newLo = usedEnd + s.step;
+        const newHi = newLo + span;
+        if(ascending){
+          card.querySelector('.f-start').value = newLo;
+          card.querySelector('.f-end').value = newHi;
+        } else {
+          card.querySelector('.f-start').value = newHi;
+          card.querySelector('.f-end').value = newLo;
+        }
+        updateSetPreview(card);
+        usedEndByKey[key] = newHi;
+        changed = true;
+      } else {
+        usedEndByKey[key] = Math.max(usedEnd === undefined ? -Infinity : usedEnd, hi);
+      }
+    });
+    return changed;
+  }
+
+  document.getElementById('autofixBtn').addEventListener('click', () => {
+    const changed = autoFixOverlaps();
+    if(changed){
+      generateAll();
+      showToast('ปรับ range ให้ไม่ชนกันแล้ว และสร้างรายการใหม่ให้เรียบร้อย');
+    } else {
+      showToast('ไม่พบ range ที่ชนกันแบบแก้อัตโนมัติได้ ลองเช็คด้วยตาอีกที');
+    }
+  });
+
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    const duration = Math.max(1800, Math.min(msg.length * 45, 6000));
+    setTimeout(() => toastEl.classList.remove('show'), duration);
+  }
+
+  document.getElementById('addSetBtn').addEventListener('click', () => {
+    let defaults;
+    if(defaultTemplate){
+      defaults = Object.assign({}, defaultTemplate);
+    } else {
+      const cards = setsContainer.querySelectorAll('.set-card');
+      defaults = { prefix:'', start:1, end:10, step:1, digits:5 };
+      if(cards.length > 0){
+        const last = readSet(cards[cards.length - 1]);
+        const span = last.end - last.start;
+        defaults = {
+          prefix: last.prefix,
+          start: last.end + last.step,
+          end: last.end + last.step + (Number.isNaN(span) ? 9 : span),
+          step: last.step,
+          digits: last.digits
+        };
+      }
+    }
+    const card = makeSetCard(defaults);
+    card.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+
+  function generateAll(){
+    const cards = Array.from(setsContainer.querySelectorAll('.set-card'));
+    let allRows = [];
+    let hadError = false;
+    cards.forEach(card => {
+      const set = readSet(card);
+      const r = buildOne(set);
+      if(r.error){ hadError = true; return; }
+      r.list.forEach(code => allRows.push({ group: set.tag, code }));
+    });
+    allRows.forEach((r, i) => { r.origIdx = i + 1; });
+    const dupCount = renderCombined(allRows);
+    if(hadError){
+      showToast('บางชุดข้อมูลไม่ครบ ระบบข้ามชุดนั้นให้แล้ว');
+    } else if(dupCount > 0){
+      showToast(`⚠ พบ SN ชนกัน ${dupCount} รายการ ดูไฮไลท์สีแดงในลิสต์`);
+    }
+  }
+
+  document.getElementById('genBtn').addEventListener('click', generateAll);
+
+  function fallbackCopy(text){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch(e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  copyBtn.addEventListener('click', () => {
+    if(currentRows.length === 0) return;
+    const text = currentRows.map(r => r.code).join('\n');
+    const finish = (ok) => showToast(ok ? `คัดลอกแล้ว ${currentRows.length} รายการ` : 'คัดลอกไม่สำเร็จ ลองกดค้างเพื่อเลือกข้อความแทน');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(() => finish(true)).catch(() => finish(fallbackCopy(text)));
+    } else {
+      finish(fallbackCopy(text));
+    }
+  });
+
+  csvBtn.addEventListener('click', () => {
+    if(currentRows.length === 0) return;
+    const csv = 'SN,Set\n' + currentRows.map(r => `${r.code},${r.group}`).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sn-list-batch.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  xlsxBtn.addEventListener('click', () => {
+    if(currentRows.length === 0) return;
+    const rows = [['SN', 'Set'], ...currentRows.map(r => [r.code, r.group])];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 20 }, { wch: 10 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'SN List');
+    XLSX.writeFile(wb, `sn-list-batch.xlsx`);
+  });
+
+  document.getElementById('clearDefaultBtn').addEventListener('click', () => {
+    defaultTemplate = null;
+    updateDefaultBanner();
+    showToast('ล้างค่าเริ่มต้นแล้ว');
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if(!window.confirm('ล้างค่าทั้งหมด รวมทุกชุดและผลลัพธ์? กดตกลงเพื่อยืนยัน')) return;
+    setsContainer.innerHTML = '';
+    setCounter = 0;
+    defaultTemplate = null;
+    updateDefaultBanner();
+    renderCombined([]);
+    makeSetCard({ prefix:'', start:1, end:10, step:1, digits:5 });
+    showToast('รีเซ็ตเรียบร้อย');
+  });
+
+  makeSetCard({ prefix:'S8N2606A', start:102, end:119, step:1, digits:5 });
+</script>
+</body>
+</html>
