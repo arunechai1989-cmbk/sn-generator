@@ -934,10 +934,15 @@ S8N2606A00134"></textarea>
   });
 
   document.getElementById('resetBtn').addEventListener('click', () => {
-    if(!window.confirm('ล้างค่าทั้งหมด รวมทุกชุดและผลลัพธ์? กดตกลงเพื่อยืนยัน')) return;
+    if(!window.confirm('ล้างค่าทั้งหมด รวมทุกชุด ผลลัพธ์ ช่องนำเข้า และโหมด? กดตกลงเพื่อยืนยัน')) return;
     setsContainer.innerHTML = '';
     setCounter = 0;
     defaultTemplate = null;
+    document.getElementById('importInput').value = '';
+    updateImportPreview();
+    document.getElementById('modeRangeToggle').checked = true;
+    document.getElementById('modeImportToggle').checked = true;
+    applyModeVisibility();
     updateDefaultBanner();
     renderCombined([]);
     makeSetCard({ prefix:'', start:1, end:10, step:1, digits:5 });
