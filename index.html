@@ -344,6 +344,93 @@
   }
   .autofix-btn:hover{ opacity:0.9; }
 
+
+  .import-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-top:3px solid var(--ok);
+    border-radius:2px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .import-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .import-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    color:var(--ok);
+    background:rgba(47,107,79,0.12);
+    padding:3px 8px;
+    border-radius:2px;
+  }
+  .import-card label{
+    display:block;
+    font-size:10.5px;
+    font-family:'IBM Plex Mono',monospace;
+    letter-spacing:0.05em;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .import-card textarea{
+    width:100%;
+    min-height:180px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13.5px;
+    line-height:1.6;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    background:#FFFEFA;
+    color:var(--ink);
+    resize:vertical;
+    outline:none;
+  }
+  .import-card textarea:focus{
+    border-color:var(--ok);
+    box-shadow:0 0 0 3px rgba(47,107,79,0.14);
+  }
+  .import-preview{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:8px;
+  }
+  .import-preview b{ color:var(--ink); font-weight:600; }
+
+
+  .mode-toggle-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .mode-pill{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:8px 13px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    cursor:pointer;
+    color:var(--ink-soft);
+    background:var(--paper);
+    user-select:none;
+  }
+  .mode-pill input{ accent-color:var(--amber); cursor:pointer; }
+  .mode-pill.active{
+    border-color:var(--amber);
+    color:var(--ink);
+    background:rgba(199,120,10,0.1);
+    font-weight:600;
+  }
+
   @media (max-width:420px){
     .three-col, .four-col{ grid-template-columns:1fr 1fr; }
   }
@@ -355,6 +442,22 @@
   <h1>SN Generator</h1>
   <p class="sub">ตั้งได้หลายชุดพร้อมกัน แต่ละชุดมี prefix / ช่วงเลข / จำนวนหลัก / step เป็นของตัวเอง กดสร้างรวมทีเดียว copy หรือโหลดไฟล์ได้ครบทุกชุด</p>
 
+  <div class="mode-toggle-row" id="modeToggleRow">
+    <label class="mode-pill" id="modeRangeLabel"><input type="checkbox" id="modeRangeToggle" checked> โหมดสร้างเลขรัน</label>
+    <label class="mode-pill" id="modeImportLabel"><input type="checkbox" id="modeImportToggle" checked> โหมดนำเข้า</label>
+  </div>
+
+  <div class="import-card">
+    <div class="import-head">
+      <span class="import-tag">นำเข้า (Import)</span>
+    </div>
+    <label>วาง SN ที่มีอยู่แล้ว คั่นด้วยคอมม่าหรือขึ้นบรรทัดใหม่ก็ได้ — จะถูกแปลงเป็นคอลัมน์และรวมเข้าผลลัพธ์อัตโนมัติตอนกด "สร้างรายการทั้งหมด" ด้านล่าง (ไม่ใส่ก็ได้ ถ้าไม่ต้องการนำเข้าอะไร)</label>
+    <textarea id="importInput" rows="9" placeholder="เช่น
+0026149B155A0012,0026149B155A0014,0026149B155A0018,0026149B155A0020"></textarea>
+    <div class="import-preview" id="importPreview">ยังไม่มีรายการนำเข้า</div>
+  </div>
+
+  <div id="rangeSection">
   <div class="default-banner" id="defaultBanner">
     <span id="defaultBannerText"></span>
     <button id="clearDefaultBtn">ล้างค่าเริ่มต้น</button>
@@ -363,6 +466,7 @@
   <div style="display:flex; gap:10px; margin-bottom:20px;">
     <button class="add-row-btn" id="addSetBtn" style="margin-bottom:0;">+ เพิ่มชุด SN</button>
     <button class="add-row-btn" id="resetBtn" style="margin-bottom:0; max-width:120px; color:var(--err); border-color:var(--err);">รีเซ็ตทั้งหมด</button>
+  </div>
   </div>
 
   <div class="actions">
@@ -405,6 +509,46 @@
   let currentCodeCounts = {};
   let filterDupOnly = false;
   let defaultTemplate = null;
+
+  function parseImportText(text){
+    return text.split(/[,\n]+/).map(s => s.trim()).filter(s => s.length > 0);
+  }
+
+  function updateImportPreview(){
+    const items = parseImportText(document.getElementById('importInput').value);
+    const el = document.getElementById('importPreview');
+    if(items.length === 0){ el.textContent = 'ยังไม่มีรายการนำเข้า'; return; }
+    el.innerHTML = items.length === 1
+      ? `พบ <b>1</b> รายการ: <b>${items[0]}</b>`
+      : `พบ <b>${items.length}</b> รายการ — <b>${items[0]}</b> ... <b>${items[items.length - 1]}</b>`;
+  }
+  document.getElementById('importInput').addEventListener('input', updateImportPreview);
+
+  function applyModeVisibility(){
+    const rangeOn = document.getElementById('modeRangeToggle').checked;
+    const importOn = document.getElementById('modeImportToggle').checked;
+    document.getElementById('modeRangeLabel').classList.toggle('active', rangeOn);
+    document.getElementById('modeImportLabel').classList.toggle('active', importOn);
+    document.getElementById('rangeSection').style.display = rangeOn ? '' : 'none';
+    document.querySelector('.import-card').style.display = importOn ? '' : 'none';
+  }
+
+  function handleModeToggleChange(){
+    const rangeOn = document.getElementById('modeRangeToggle').checked;
+    const importOn = document.getElementById('modeImportToggle').checked;
+    if(!rangeOn && !importOn){
+      document.getElementById('modeRangeToggle').checked = true;
+      showToast('ต้องเปิดอย่างน้อย 1 โหมด เปิด "โหมดสร้างเลขรัน" ให้อัตโนมัติ');
+    }
+    applyModeVisibility();
+  }
+  document.getElementById('modeRangeToggle').addEventListener('change', handleModeToggleChange);
+  document.getElementById('modeImportToggle').addEventListener('change', handleModeToggleChange);
+
+  function csvSafeValue(v){
+    // Guards against Excel auto-stripping leading zeros from pure-digit codes on CSV open
+    return /^[0-9]+$/.test(v) ? `="${v}"` : v;
+  }
 
   function updateDefaultBanner(){
     const banner = document.getElementById('defaultBanner');
@@ -611,9 +755,19 @@ S8N2606A00134"></textarea>
       return `<li class="${isDup ? 'dup-row' : ''}"><span class="idx">${r.origIdx}</span><span class="code">${r.code}</span>${isDup ? '<span class="dup-tag">ซ้ำ</span>' : ''}<span class="grp">${r.group}</span></li>`;
     }).join('');
 
+    const rangeOnForCount = document.getElementById('modeRangeToggle').checked;
+    const importOnForCount = document.getElementById('modeImportToggle').checked;
+    let baseCountText;
+    if(rangeOnForCount && importOnForCount){
+      baseCountText = `ทั้งหมด <b>${rows.length}</b> รายการ จาก <b>${setsContainer.children.length}</b> ชุด + นำเข้า`;
+    } else if(rangeOnForCount){
+      baseCountText = `ทั้งหมด <b>${rows.length}</b> รายการ จาก <b>${setsContainer.children.length}</b> ชุด`;
+    } else {
+      baseCountText = `ทั้งหมด <b>${rows.length}</b> รายการ (นำเข้า)`;
+    }
     let countText = dupCount > 0
       ? `ทั้งหมด <b>${rows.length}</b> รายการ · <span class="dup-warn">ชนกัน ${dupCount} รายการ</span>`
-      : `ทั้งหมด <b>${rows.length}</b> รายการ จาก <b>${setsContainer.children.length}</b> ชุด`;
+      : baseCountText;
     if(filterDupOnly) countText += ` · กำลังกรองเฉพาะที่ชนกัน (${visible.length})`;
     countLabel.innerHTML = countText;
     [copyBtn, csvBtn, xlsxBtn].forEach(b => b.disabled = false);
@@ -698,15 +852,23 @@ S8N2606A00134"></textarea>
   });
 
   function generateAll(){
-    const cards = Array.from(setsContainer.querySelectorAll('.set-card'));
+    const rangeOn = document.getElementById('modeRangeToggle').checked;
+    const importOn = document.getElementById('modeImportToggle').checked;
     let allRows = [];
     let hadError = false;
-    cards.forEach(card => {
-      const set = readSet(card);
-      const r = buildOne(set);
-      if(r.error){ hadError = true; return; }
-      r.list.forEach(code => allRows.push({ group: set.tag, code }));
-    });
+    if(rangeOn){
+      const cards = Array.from(setsContainer.querySelectorAll('.set-card'));
+      cards.forEach(card => {
+        const set = readSet(card);
+        const r = buildOne(set);
+        if(r.error){ hadError = true; return; }
+        r.list.forEach(code => allRows.push({ group: set.tag, code }));
+      });
+    }
+    if(importOn){
+      const importedItems = parseImportText(document.getElementById('importInput').value);
+      importedItems.forEach(code => allRows.push({ group: 'นำเข้า', code }));
+    }
     allRows.forEach((r, i) => { r.origIdx = i + 1; });
     const dupCount = renderCombined(allRows);
     if(hadError){
@@ -745,7 +907,7 @@ S8N2606A00134"></textarea>
 
   csvBtn.addEventListener('click', () => {
     if(currentRows.length === 0) return;
-    const csv = 'SN,Set\n' + currentRows.map(r => `${r.code},${r.group}`).join('\n');
+    const csv = 'SN,Set\n' + currentRows.map(r => `${csvSafeValue(r.code)},${r.group}`).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -783,6 +945,7 @@ S8N2606A00134"></textarea>
   });
 
   makeSetCard({ prefix:'S8N2606A', start:102, end:119, step:1, digits:5 });
+  applyModeVisibility();
 </script>
 </body>
 </html>
