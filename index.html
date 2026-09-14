@@ -408,7 +408,21 @@
     gap:10px;
     margin-bottom:18px;
     flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
   }
+  .reset-top-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--err);
+    background:none;
+    border:1px solid var(--err);
+    border-radius:2px;
+    padding:7px 12px;
+    cursor:pointer;
+    flex:none;
+  }
+  .reset-top-btn:hover{ background:rgba(178,58,46,0.08); }
   .mode-pill{
     display:flex;
     align-items:center;
@@ -443,8 +457,11 @@
   <p class="sub">ตั้งได้หลายชุดพร้อมกัน แต่ละชุดมี prefix / ช่วงเลข / จำนวนหลัก / step เป็นของตัวเอง กดสร้างรวมทีเดียว copy หรือโหลดไฟล์ได้ครบทุกชุด</p>
 
   <div class="mode-toggle-row" id="modeToggleRow">
-    <label class="mode-pill" id="modeRangeLabel"><input type="checkbox" id="modeRangeToggle" checked> โหมดสร้างเลขรัน</label>
-    <label class="mode-pill" id="modeImportLabel"><input type="checkbox" id="modeImportToggle" checked> โหมดนำเข้า</label>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <label class="mode-pill" id="modeRangeLabel"><input type="checkbox" id="modeRangeToggle" checked> โหมดสร้างเลขรัน</label>
+      <label class="mode-pill" id="modeImportLabel"><input type="checkbox" id="modeImportToggle" checked> โหมดนำเข้า</label>
+    </div>
+    <button class="reset-top-btn" id="resetBtn">รีเซ็ตทั้งหมด</button>
   </div>
 
   <div class="import-card">
@@ -465,7 +482,6 @@
   <div class="sets" id="setsContainer"></div>
   <div style="display:flex; gap:10px; margin-bottom:20px;">
     <button class="add-row-btn" id="addSetBtn" style="margin-bottom:0;">+ เพิ่มชุด SN</button>
-    <button class="add-row-btn" id="resetBtn" style="margin-bottom:0; max-width:120px; color:var(--err); border-color:var(--err);">รีเซ็ตทั้งหมด</button>
   </div>
   </div>
 
