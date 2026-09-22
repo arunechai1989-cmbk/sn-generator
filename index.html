@@ -527,7 +527,7 @@
   let defaultTemplate = null;
 
   function parseImportText(text){
-    return text.split(/[,\n]+/).map(s => s.trim()).filter(s => s.length > 0);
+    return text.split(/[, \t\r\n]+/).map(s => s.trim()).filter(s => s.length > 0);
   }
 
   function updateImportPreview(){
