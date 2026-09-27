@@ -1008,7 +1008,7 @@ S8N2606A00134"></textarea>
     const clearImport = modeImportLocked || noLock;
     const what = noLock
       ? 'ทุกอย่าง (โหมดคงเดิม ไม่สลับ)'
-      : (modeRangeLocked && modeImportLocked ? 'ทั้ง 2 โหมดที่ล็อคไว้เท่านั้น' : (modeRangeLocked ? 'โหมดสร้างเลขรันที่ล็อคไว้เท่านั้น' : 'โหมดนำเข้าที่ล็อคไว้เท่านั้น'));
+      : (modeRangeLocked && modeImportLocked ? 'ทั้ง 2 โหมดที่ล็อคไว้ + ผลลัพธ์' : (modeRangeLocked ? 'โหมดสร้างเลขรันที่ล็อคไว้ + ผลลัพธ์' : 'โหมดนำเข้าที่ล็อคไว้ + ผลลัพธ์'));
     if(!window.confirm(`ล้าง${what}? กดตกลงเพื่อยืนยัน`)) return;
     if(clearRange){
       setsContainer.innerHTML = '';
@@ -1021,7 +1021,7 @@ S8N2606A00134"></textarea>
       document.getElementById('importInput').value = '';
       updateImportPreview();
     }
-    if(noLock) renderCombined([]);
+    renderCombined([]);
     showToast(noLock ? 'รีเซ็ตเรียบร้อย' : 'รีเซ็ตโหมดที่ล็อคเรียบร้อย');
   });
 
