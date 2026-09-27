@@ -444,6 +444,30 @@
     background:rgba(199,120,10,0.1);
     font-weight:600;
   }
+  .mode-pair{ display:flex; align-items:center; gap:6px; }
+  .lock-btn{
+    font-size:11px;
+    line-height:1.2;
+    padding:4px 6px;
+    background:none;
+    border:1px solid var(--line);
+    border-radius:2px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    flex:none;
+  }
+  .lock-btn:hover{ border-color:var(--amber); color:var(--amber-deep); }
+  .mode-pill.locked{
+    border-color:var(--amber);
+    background:rgba(199,120,10,0.1);
+    color:var(--ink);
+  }
+  .mode-pair.locked .lock-btn{
+    border-color:var(--amber);
+    color:var(--amber-deep);
+    background:rgba(199,120,10,0.1);
+  }
+  .mode-pill input:disabled{ opacity:0.55; }
 
   @media (max-width:420px){
     .three-col, .four-col{ grid-template-columns:1fr 1fr; }
@@ -457,9 +481,15 @@
   <p class="sub">ตั้งได้หลายชุดพร้อมกัน แต่ละชุดมี prefix / ช่วงเลข / จำนวนหลัก / step เป็นของตัวเอง กดสร้างรวมทีเดียว copy หรือโหลดไฟล์ได้ครบทุกชุด</p>
 
   <div class="mode-toggle-row" id="modeToggleRow">
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <label class="mode-pill" id="modeRangeLabel"><input type="checkbox" id="modeRangeToggle" checked> โหมดสร้างเลขรัน</label>
-      <label class="mode-pill" id="modeImportLabel"><input type="checkbox" id="modeImportToggle" checked> โหมดนำเข้า</label>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <div class="mode-pair" id="modeRangePair">
+        <label class="mode-pill" id="modeRangeLabel"><input type="checkbox" id="modeRangeToggle" checked> โหมดสร้างเลขรัน</label>
+        <button class="lock-btn" id="toggleRangeLock" type="button">🔓</button>
+      </div>
+      <div class="mode-pair" id="modeImportPair">
+        <label class="mode-pill" id="modeImportLabel"><input type="checkbox" id="modeImportToggle" checked> โหมดนำเข้า</label>
+        <button class="lock-btn" id="toggleImportLock" type="button">🔓</button>
+      </div>
     </div>
     <button class="reset-top-btn" id="resetBtn">รีเซ็ตทั้งหมด</button>
   </div>
@@ -525,6 +555,8 @@
   let currentCodeCounts = {};
   let filterDupOnly = false;
   let defaultTemplate = null;
+  let modeRangeLocked = false;
+  let modeImportLocked = false;
 
   function parseImportText(text){
     return text.split(/[, \t\r\n]+/).map(s => s.trim()).filter(s => s.length > 0);
@@ -560,6 +592,27 @@
   }
   document.getElementById('modeRangeToggle').addEventListener('change', handleModeToggleChange);
   document.getElementById('modeImportToggle').addEventListener('change', handleModeToggleChange);
+
+  function updateLockUI(){
+    document.getElementById('modeRangeToggle').disabled = modeRangeLocked;
+    document.getElementById('modeImportToggle').disabled = modeImportLocked;
+    document.getElementById('modeRangeLabel').classList.toggle('locked', modeRangeLocked);
+    document.getElementById('modeImportLabel').classList.toggle('locked', modeImportLocked);
+    document.getElementById('modeRangePair').classList.toggle('locked', modeRangeLocked);
+    document.getElementById('modeImportPair').classList.toggle('locked', modeImportLocked);
+    document.getElementById('toggleRangeLock').textContent = modeRangeLocked ? '🔒' : '🔓';
+    document.getElementById('toggleImportLock').textContent = modeImportLocked ? '🔒' : '🔓';
+  }
+  document.getElementById('toggleRangeLock').addEventListener('click', () => {
+    modeRangeLocked = !modeRangeLocked;
+    updateLockUI();
+    showToast(modeRangeLocked ? 'ล็อคโหมดสร้างเลขรันแล้ว — รีเซ็ตจะล้างแค่โหมดนี้' : 'ปลดล็อคโหมดสร้างเลขรันแล้ว');
+  });
+  document.getElementById('toggleImportLock').addEventListener('click', () => {
+    modeImportLocked = !modeImportLocked;
+    updateLockUI();
+    showToast(modeImportLocked ? 'ล็อคโหมดนำเข้าแล้ว — รีเซ็ตจะล้างแค่โหมดนี้' : 'ปลดล็อคโหมดนำเข้าแล้ว');
+  });
 
   function csvSafeValue(v){
     // Guards against Excel auto-stripping leading zeros from pure-digit codes on CSV open
@@ -950,23 +1003,31 @@ S8N2606A00134"></textarea>
   });
 
   document.getElementById('resetBtn').addEventListener('click', () => {
-    if(!window.confirm('ล้างค่าทั้งหมด รวมทุกชุด ผลลัพธ์ ช่องนำเข้า และโหมด? กดตกลงเพื่อยืนยัน')) return;
-    setsContainer.innerHTML = '';
-    setCounter = 0;
-    defaultTemplate = null;
-    document.getElementById('importInput').value = '';
-    updateImportPreview();
-    document.getElementById('modeRangeToggle').checked = true;
-    document.getElementById('modeImportToggle').checked = true;
-    applyModeVisibility();
-    updateDefaultBanner();
-    renderCombined([]);
-    makeSetCard({ prefix:'', start:1, end:10, step:1, digits:5 });
-    showToast('รีเซ็ตเรียบร้อย');
+    const noLock = !modeRangeLocked && !modeImportLocked;
+    const clearRange = modeRangeLocked || noLock;
+    const clearImport = modeImportLocked || noLock;
+    const what = noLock
+      ? 'ทุกอย่าง (โหมดคงเดิม ไม่สลับ)'
+      : (modeRangeLocked && modeImportLocked ? 'ทั้ง 2 โหมดที่ล็อคไว้เท่านั้น' : (modeRangeLocked ? 'โหมดสร้างเลขรันที่ล็อคไว้เท่านั้น' : 'โหมดนำเข้าที่ล็อคไว้เท่านั้น'));
+    if(!window.confirm(`ล้าง${what}? กดตกลงเพื่อยืนยัน`)) return;
+    if(clearRange){
+      setsContainer.innerHTML = '';
+      setCounter = 0;
+      defaultTemplate = null;
+      updateDefaultBanner();
+      makeSetCard({ prefix:'', start:1, end:10, step:1, digits:5 });
+    }
+    if(clearImport){
+      document.getElementById('importInput').value = '';
+      updateImportPreview();
+    }
+    if(noLock) renderCombined([]);
+    showToast(noLock ? 'รีเซ็ตเรียบร้อย' : 'รีเซ็ตโหมดที่ล็อคเรียบร้อย');
   });
 
   makeSetCard({ prefix:'S8N2606A', start:102, end:119, step:1, digits:5 });
   applyModeVisibility();
+  updateLockUI();
 </script>
 </body>
 </html>
