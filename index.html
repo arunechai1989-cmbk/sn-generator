@@ -501,6 +501,10 @@
     <label>วาง SN ที่มีอยู่แล้ว คั่นด้วยคอมม่าหรือขึ้นบรรทัดใหม่ก็ได้ — จะถูกแปลงเป็นคอลัมน์และรวมเข้าผลลัพธ์อัตโนมัติตอนกด "สร้างรายการทั้งหมด" ด้านล่าง (ไม่ใส่ก็ได้ ถ้าไม่ต้องการนำเข้าอะไร)</label>
     <textarea id="importInput" rows="9" placeholder="เช่น
 0026149B155A0012,0026149B155A0014,0026149B155A0018,0026149B155A0020"></textarea>
+    <div class="field-row" style="margin-top:12px; margin-bottom:0;">
+      <label for="suffixInput">เพิ่มข้อความต่อท้าย (Suffix) — เช่น "/" หรือ "_2" (เว้นว่าง = ไม่ต่อ)</label>
+      <input type="text" id="suffixInput" placeholder='เช่น "/" หรือ "_2" (เว้นว่าง = ไม่ต่อ)' spellcheck="false">
+    </div>
     <div class="import-preview" id="importPreview">ยังไม่มีรายการนำเข้า</div>
   </div>
 
@@ -564,13 +568,19 @@
 
   function updateImportPreview(){
     const items = parseImportText(document.getElementById('importInput').value);
+    const suffix = document.getElementById('suffixInput').value;
     const el = document.getElementById('importPreview');
-    if(items.length === 0){ el.textContent = 'ยังไม่มีรายการนำเข้า'; return; }
+    const fmt = (it) => it + suffix;
+    if(items.length === 0){
+      el.innerHTML = suffix ? `ยังไม่มีรายการนำเข้า (จะต่อท้าย "<b>${suffix}</b>")` : 'ยังไม่มีรายการนำเข้า';
+      return;
+    }
     el.innerHTML = items.length === 1
-      ? `พบ <b>1</b> รายการ: <b>${items[0]}</b>`
-      : `พบ <b>${items.length}</b> รายการ — <b>${items[0]}</b> ... <b>${items[items.length - 1]}</b>`;
+      ? `พบ <b>1</b> รายการ: <b>${fmt(items[0])}</b>${suffix ? ` (ต่อท้าย "<b>${suffix}</b>" แล้ว)` : ''}`
+      : `พบ <b>${items.length}</b> รายการ — <b>${fmt(items[0])}</b> ... <b>${fmt(items[items.length - 1])}</b>${suffix ? ` · ต่อท้าย "<b>${suffix}</b>"` : ''}`;
   }
   document.getElementById('importInput').addEventListener('input', updateImportPreview);
+  document.getElementById('suffixInput').addEventListener('input', updateImportPreview);
 
   function applyModeVisibility(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
@@ -935,8 +945,9 @@ S8N2606A00134"></textarea>
       });
     }
     if(importOn){
+      const suffix = document.getElementById('suffixInput').value;
       const importedItems = parseImportText(document.getElementById('importInput').value);
-      importedItems.forEach(code => allRows.push({ group: 'นำเข้า', code }));
+      importedItems.forEach(code => allRows.push({ group: 'นำเข้า', code: code + suffix }));
     }
     allRows.forEach((r, i) => { r.origIdx = i + 1; });
     const dupCount = renderCombined(allRows);
@@ -1019,6 +1030,7 @@ S8N2606A00134"></textarea>
     }
     if(clearImport){
       document.getElementById('importInput').value = '';
+      document.getElementById('suffixInput').value = '';
       updateImportPreview();
     }
     renderCombined([]);
