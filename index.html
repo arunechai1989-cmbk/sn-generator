@@ -44,6 +44,39 @@
     margin-bottom:6px;
   }
   .kicker .dot{width:6px;height:6px;background:var(--amber);border-radius:50%;flex:none;}
+  .toprow{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+  .clock{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    font-family:'IBM Plex Mono',monospace;
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:5px 12px;
+    background:rgba(199,120,10,0.06);
+  }
+  .clock-time{
+    font-size:20px;
+    letter-spacing:2px;
+    color:var(--ink);
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+    line-height:1;
+  }
+  .clock-sep{ color:var(--amber); animation:clockblink 1s step-end infinite; }
+  @keyframes clockblink{ 50%{ opacity:0; } }
+  .clock-date{
+    font-size:11px;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+  }
 
   h1{
     font-family:'IBM Plex Mono',monospace;
@@ -537,7 +570,15 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="kicker"><span class="dot"></span>SERIAL NUMBER UTILITY — BATCH MODE</div>
+  <div class="toprow">
+    <div class="kicker"><span class="dot"></span>SERIAL NUMBER UTILITY — BATCH MODE</div>
+    <div class="clock" id="digitalClock">
+      <span class="clock-time">
+        <span id="clockH">--</span><span class="clock-sep">:</span><span id="clockM">--</span><span class="clock-sep">:</span><span id="clockS">--</span>
+      </span>
+      <span class="clock-date" id="clockDate"></span>
+    </div>
+  </div>
   <div class="app-head">
     <h1>SN Generator</h1>
     <button class="reset-top-btn" id="resetBtn">รีเซ็ตทั้งหมด</button>
@@ -768,6 +809,17 @@ S8N2606A00125-S8N2606A00135"></textarea>
       document.getElementById(panelId).classList.toggle('open');
     });
   });
+
+  function tickClock(){
+    const now = new Date();
+    const p = n => String(n).padStart(2, '0');
+    document.getElementById('clockH').textContent = p(now.getHours());
+    document.getElementById('clockM').textContent = p(now.getMinutes());
+    document.getElementById('clockS').textContent = p(now.getSeconds());
+    document.getElementById('clockDate').textContent = now.toLocaleDateString('th-TH', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
 
   function csvSafeValue(v){
     // Guards against Excel auto-stripping leading zeros from pure-digit codes on CSV open
