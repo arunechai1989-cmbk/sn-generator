@@ -567,71 +567,113 @@
   }
   .history-head{
     display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:12px;
-    padding:10px 14px;
+    align-items:baseline;
+    gap:10px;
+    padding:12px 14px;
     background:rgba(199,120,10,0.06);
     border-bottom:1px solid var(--line);
     font-family:'IBM Plex Mono',monospace;
+  }
+  .history-title{
     font-size:12px;
     letter-spacing:0.08em;
     color:var(--ink);
+    font-weight:700;
+  }
+  .history-sub{
+    font-size:11px;
+    letter-spacing:0.04em;
+    color:var(--ink-soft);
   }
   .history-clear{
+    margin-left:auto;
     font-family:'IBM Plex Mono',monospace;
     font-size:11px;
     color:var(--err);
     border:1px solid var(--err);
     border-radius:2px;
     background:none;
-    padding:5px 10px;
+    padding:4px 9px;
     cursor:pointer;
     flex:none;
   }
   .history-clear:hover{ background:rgba(178,58,46,0.08); }
   .history-empty{
-    padding:16px 14px;
+    padding:18px 14px;
     font-size:13px;
     color:var(--ink-soft);
     font-family:'IBM Plex Mono',monospace;
   }
   .history-item{
     display:flex;
-    justify-content:space-between;
-    align-items:center;
+    align-items:flex-start;
     gap:12px;
-    padding:10px 14px;
+    padding:11px 14px;
     border-bottom:1px solid var(--line);
+    transition:background .15s;
   }
   .history-item:last-child{ border-bottom:none; }
+  .history-item:hover{ background:rgba(199,120,10,0.05); }
+  .history-idx{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--amber-deep);
+    width:20px;
+    flex:none;
+    text-align:right;
+    padding-top:2px;
+  }
   .history-meta{
+    flex:1;
+    min-width:0;
     display:flex;
     flex-direction:column;
-    gap:2px;
-    min-width:0;
+    gap:3px;
   }
   .history-time{
     font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    letter-spacing:0.06em;
-    color:var(--ink-soft);
+    font-size:12px;
+    color:var(--ink);
+    letter-spacing:0.05em;
   }
-  .history-summary{ font-size:12.5px; color:var(--ink); }
+  .history-summary{
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.5;
+  }
   .history-summary b{ color:var(--amber-deep); font-weight:600; }
-  .history-actions{ display:flex; gap:8px; flex:none; }
+  .history-actions{
+    flex:none;
+    display:flex;
+    gap:6px;
+    padding-top:2px;
+  }
   .history-btn{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    padding:5px 10px;
+    width:26px;
+    height:26px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    line-height:1;
     border-radius:2px;
     cursor:pointer;
     background:none;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    padding:0;
+    font-family:'IBM Plex Mono',monospace;
   }
-  .history-btn.load{ border:1px solid var(--amber); color:var(--amber-deep); }
-  .history-btn.load:hover{ background:rgba(199,120,10,0.1); }
-  .history-btn.del{ border:1px solid var(--err); color:var(--err); }
-  .history-btn.del:hover{ background:rgba(178,58,46,0.08); }
+  .history-btn.load:hover{
+    border-color:var(--amber);
+    color:var(--amber-deep);
+    background:rgba(199,120,10,0.1);
+  }
+  .history-btn.del:hover{
+    border-color:var(--err);
+    color:var(--err);
+    background:rgba(178,58,46,0.08);
+  }
 
   @media (max-width:420px){
     .three-col, .four-col{ grid-template-columns:1fr 1fr; }
@@ -774,7 +816,8 @@ S8N2606A00125-S8N2606A00135"></textarea>
 
 <div class="history-card">
     <div class="history-head">
-      <span class="history-title">ประวัติการสร้าง (ล่าสุด 20)</span>
+      <span class="history-title">ประวัติการสร้าง</span>
+      <span class="history-sub">ล่าสุด 20</span>
       <button class="history-clear" id="historyClearBtn" type="button">ล้างทั้งหมด</button>
     </div>
     <div class="history-list" id="historyList"></div>
@@ -1427,15 +1470,16 @@ S8N2606A00134"></textarea>
       if(e.modes.range) parts.push(`สร้างเลขรัน <b>${e.sets.length}</b> ชุด`);
       if(e.modes.import) parts.push(`นำเข้า <b>${e.importCount}</b> รายการ`);
       if(e.modes.sample) parts.push(`ตัวอย่าง <b>${e.sampleGroups}</b> กลุ่ม/ช่วง`);
-      const summary = `${parts.join(' + ')} · ${e.results.length} รายการ`;
+      const summary = `${parts.join(' + ')} · <b>${e.results.length}</b> รายการ`;
       return `<div class="history-item">
+        <div class="history-idx">${String(i + 1).padStart(2, '0')}</div>
         <div class="history-meta">
           <span class="history-time">${e.time}</span>
           <span class="history-summary">${summary}</span>
         </div>
         <div class="history-actions">
-          <button class="history-btn load" data-load="${i}" type="button">โหลด</button>
-          <button class="history-btn del" data-del="${i}" type="button">ลบ</button>
+          <button class="history-btn load" data-load="${i}" type="button" title="โหลดกลับ">↺</button>
+          <button class="history-btn del" data-del="${i}" type="button" title="ลบ">✕</button>
         </div>
       </div>`;
     }).join('');
