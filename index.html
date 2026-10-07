@@ -476,6 +476,54 @@
   }
   .mode-pill input:disabled{ opacity:0.55; }
 
+  .help-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    width:26px;
+    height:26px;
+    padding:0;
+    line-height:1;
+    background:none;
+    border:1px solid var(--line);
+    border-radius:50%;
+    color:var(--ink-soft);
+    cursor:pointer;
+    flex:none;
+  }
+  .help-btn:hover{ border-color:var(--amber); color:var(--amber-deep); }
+  .help-panel{
+    display:none;
+    background:rgba(199,120,10,0.06);
+    border:1px solid var(--line);
+    border-left:3px solid var(--amber);
+    border-radius:3px;
+    padding:14px 16px;
+    margin:0 0 18px;
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.65;
+  }
+  .help-panel.open{ display:block; }
+  .help-panel h4{
+    margin:0 0 8px;
+    font-size:11.5px;
+    letter-spacing:0.08em;
+    color:var(--ink);
+    font-weight:700;
+  }
+  .help-panel ul{ margin:0; padding-left:18px; }
+  .help-panel li{ margin-bottom:6px; }
+  .help-panel li:last-child{ margin-bottom:0; }
+  .help-panel code{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--amber-deep);
+    background:rgba(199,120,10,0.1);
+    padding:1px 4px;
+    border-radius:2px;
+  }
+  .help-panel b{ color:var(--ink); font-weight:600; }
+
   .import-card.sample-card{ border-top-color: var(--amber); }
   .import-card .import-tag.sample-tag{
     color:var(--amber-deep);
@@ -501,16 +549,52 @@
       <div class="mode-pair" id="modeRangePair">
         <label class="mode-pill" id="modeRangeLabel"><input type="checkbox" id="modeRangeToggle" checked> โหมดสร้างเลขรัน</label>
         <button class="lock-btn" id="toggleRangeLock" type="button">🔓</button>
+        <button class="help-btn" id="helpRangeBtn" type="button" title="คู่มือโหมดสร้างเลขรัน">?</button>
       </div>
       <div class="mode-pair" id="modeImportPair">
         <label class="mode-pill" id="modeImportLabel"><input type="checkbox" id="modeImportToggle" checked> โหมดนำเข้า</label>
         <button class="lock-btn" id="toggleImportLock" type="button">🔓</button>
+        <button class="help-btn" id="helpImportBtn" type="button" title="คู่มือโหมดนำเข้า">?</button>
       </div>
       <div class="mode-pair" id="modeSamplePair">
         <label class="mode-pill" id="modeSampleLabel"><input type="checkbox" id="modeSampleToggle"> รันเลขจากตัวอย่าง</label>
         <button class="lock-btn" id="toggleSampleLock" type="button">🔓</button>
+        <button class="help-btn" id="helpSampleBtn" type="button" title="คู่มือรันเลขจากตัวอย่าง">?</button>
       </div>
-    </div>
+</div>
+  </div>
+
+  <div class="help-panel" id="helpRangePanel">
+    <h4>คู่มือ — โหมดสร้างเลขรัน</h4>
+    <ul>
+      <li>แต่ละ <b>ชุด</b> สร้างเลขตาม <code>START</code> → <code>END</code> แล้วรวมทุกชุดในลิสต์เดียวตอนกด <b>"สร้างรายการทั้งหมด"</b> — เพิ่มได้หลายชุดด้วยปุ่ม <b>+ เพิ่มชุด SN</b></li>
+      <li><code>PREFIX</code> = ข้อความนำหน้าตัวเลข · <code>STEP</code> = กระโดดทีละ (เช่น 2 = ข้ามเลขคี่) · <code>DIGITS</code> = จำนวนหลัก (ระบบเติมเลข 0 นำหน้าให้เท่ากัน เช่น 5 หลัก → 00102)</li>
+      <li>วาง <code>START</code> มากกว่า <code>END</code> ได้ → รันเลขไล่ลงมา</li>
+      <li>วาง SN ตัวอย่าง 2 บรรทัดในกล่อง <b>"วาง SN ตัวอย่าง"</b> แล้วกด <b>ตรวจจับอัตโนมัติ</b> → ระบบเดา prefix / ช่วง / หลัก ให้เอง</li>
+      <li>กด <b>ตั้งเป็นค่าเริ่มต้น</b> = เก็บชุดนี้เป็นค่าพรีเซ็ตของชุดใหม่ในรอบถัดไป</li>
+      <li>ถ้ามีรหัสซ้ำกันระหว่างชุด → ใช้ <b>แสดงเฉพาะที่ชนกัน</b> ดูได้ และ <b>แก้อัตโนมัติ</b> จะเลื่อน range ให้ไม่ชนกัน</li>
+    </ul>
+  </div>
+
+  <div class="help-panel" id="helpImportPanel">
+    <h4>คู่มือ — โหมดนำเข้า</h4>
+    <ul>
+      <li>วาง SN ที่มีอยู่แล้วลงกล่อง คั่นด้วย <b>คอมม่า / ช่องว่าง / แท็บ / ขึ้นบรรทัดใหม่</b> ได้หมด — ระบบแปลงเป็นรายการคอลัมน์และรวมเข้าผลลัพธ์</li>
+      <li><b>Prefix</b> / <b>Suffix</b> จะเติมข้อความหน้าและท้ายให้ทุกตัวที่นำเข้า เช่น วาง <code>0012</code> + prefix <code>SN-</code> → <code>SN-0012</code></li>
+      <li>เลข <code>0</code> นำหน้าถูกเก็บไว้ตามเดิม — ตอนเปิด CSV/Excel ระบบครอบเป็นข้อความเพื่อไม่ให้ 00 หาย</li>
+      <li>เปิดโหมดนี้เฉพาะตอนอยากรวมรหัสที่ไม่ได้สร้างเอง (ถ้าไม่ใช้ก็ปิดได้)</li>
+    </ul>
+  </div>
+
+  <div class="help-panel" id="helpSamplePanel">
+    <h4>คู่มือ — รันเลขจากตัวอย่าง (Range Run)</h4>
+    <ul>
+      <li>วาง SN <b>ทีละคู่</b> — ตัวที่ 1 = จุดเริ่ม, ตัวที่ 2 = จุดจบของช่วง → ระบบเติมเลขที่ขาดหายไปของคู่นั้นให้ครบ (step 1)</li>
+      <li>วางคู่ถัดไปต่อได้เรื่อย ๆ คั่นด้วย ช่องว่าง / คอมม่า / แท็บ / ขึ้นบรรทัดใหม่ เช่น วาง <code>S8N2606A00145 S8N2606A00153</code> → ได้ 00145...00153</li>
+      <li>ใช้ dash ระหว่างคู่ก็ได้ เช่น <code>S8N2606A00145-S8N2606A00153</code></li>
+      <li>ถ้าเหลือตัวเลขคี่ (จับคู่ไม่ลงตัว) → ใส่เป็นรายการเดี่ยวในผลลัพธ์</li>
+      <li>SN ที่ prefix ต่างกันจะ<b>ไม่</b>ถูกจับคู่กัน — แต่ละตัวกลายเป็นรายการเดี่ยว</li>
+    </ul>
   </div>
 
   <div class="import-card">
@@ -678,6 +762,13 @@ S8N2606A00125-S8N2606A00135"></textarea>
     modeSampleLocked = !modeSampleLocked;
     updateLockUI();
     showToast(modeSampleLocked ? 'ล็อคโหมดรันเลขจากตัวอย่างแล้ว — รีเซ็ตจะล้างแค่โหมดนี้' : 'ปลดล็อคโหมดรันเลขจากตัวอย่างแล้ว');
+  });
+
+  const helpMap = [['helpRangeBtn', 'helpRangePanel'], ['helpImportBtn', 'helpImportPanel'], ['helpSampleBtn', 'helpSamplePanel']];
+  helpMap.forEach(([btnId, panelId]) => {
+    document.getElementById(btnId).addEventListener('click', () => {
+      document.getElementById(panelId).classList.toggle('open');
+    });
   });
 
   function csvSafeValue(v){
