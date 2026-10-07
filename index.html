@@ -529,7 +529,7 @@
     <div class="import-head">
       <span class="import-tag sample-tag">รันเลขจากช่วง (Range Run)</span>
     </div>
-    <label>วาง SN หรือช่วงได้หลายชุด คั่นด้วย คอมม่า/ช่องว่าง/แท็บ/ขึ้นบรรทัดใหม่ — ระบบจับกลุ่มตาม prefix เติมเลขระหว่างกลางให้ครบ เช่น วาง <b>S8N2606A00102 S8N2606A00105</b> หรือ <b>S8N2606A00102 - S8N2606A00119</b> แล้วรวมผลทุกกลุ่มในลิสต์เดียวตอนกด "สร้างรายการทั้งหมด"</label>
+    <label>วาง SN ทีละคู่ (คู่ที่ 1 = จุดเริ่ม, ตัวที่ 2 = จุดจบของช่วง) คั่นคู่ด้วย คอมม่า/ช่องว่าง/แท็บ/ขึ้นบรรทัดใหม่ — ระบบจับคู่เลขติดกัน แล้วเติมเลขที่ขาดหายไปของคู่นั้นให้ครบ เช่น วาง 2 บรรทัด <b>S8N2606A00145 / S8N2606A00153</b> → ได้ 00145...00153 หรือใช้ dash <b>S8N2606A00145-S8N2606A00153</b> ก็ได้ แล้วรวมผลทุกคู่ในลิสต์เดียวตอนกด "สร้างรายการทั้งหมด"</label>
     <textarea id="sampleInput" rows="9" placeholder="เช่น
 S8N2606A00102 - S8N2606A00119
 S8N2606A00125-S8N2606A00135"></textarea>
@@ -679,35 +679,25 @@ S8N2606A00125-S8N2606A00135"></textarea>
   function parseSampleRanges(){
     const text = document.getElementById('sampleInput').value;
     const toks = text.split(/([\s,;\n\r\t]+|[-–—])/).map(t => t.trim()).filter(Boolean);
+    const atoms = [];
+    toks.forEach(t => {
+      if(t === '-' || t === '–' || t === '—') return;
+      const p = splitTrailingDigits(t);
+      if(p.numStr.length > 0) atoms.push({ prefix: p.prefix, num: parseInt(p.numStr, 10), digits: p.numStr.length });
+    });
     const ranges = [];
-    const plain = [];
-    for(let i = 0; i < toks.length; i++){
-      const t = toks[i];
-      if(t === '-' || t === '–' || t === '—') continue;
-      if(i + 2 < toks.length && (toks[i + 1] === '-' || toks[i + 1] === '–' || toks[i + 1] === '—')){
-        const a = splitTrailingDigits(t);
-        const b = splitTrailingDigits(toks[i + 2]);
-        if(a.numStr.length > 0 && b.numStr.length > 0 && a.prefix === b.prefix){
-          ranges.push({ prefix: a.prefix, start: parseInt(a.numStr, 10), end: parseInt(b.numStr, 10), digits: Math.max(a.numStr.length, b.numStr.length) });
-          i += 2;
-          continue;
-        }
+    let i = 0;
+    while(i < atoms.length){
+      const a = atoms[i];
+      const b = atoms[i + 1];
+      if(b && a.prefix === b.prefix){
+        ranges.push({ prefix: a.prefix, start: a.num, end: b.num, digits: Math.max(a.digits, b.digits) });
+        i += 2;
+      } else {
+        ranges.push({ prefix: a.prefix, start: a.num, end: a.num, digits: a.digits });
+        i += 1;
       }
-      const p = splitTrailingDigits(t);
-      if(p.numStr.length > 0) plain.push(t);
     }
-    const byKey = {};
-    plain.forEach(t => {
-      const p = splitTrailingDigits(t);
-      if(!byKey[p.prefix]) byKey[p.prefix] = { prefix: p.prefix, nums: [], digitLen: 0 };
-      const g = byKey[p.prefix];
-      g.nums.push(parseInt(p.numStr, 10));
-      g.digitLen = Math.max(g.digitLen, p.numStr.length);
-    });
-    Object.values(byKey).forEach(g => {
-      const sorted = g.nums.slice().sort((a, b) => a - b);
-      ranges.push({ prefix: g.prefix, start: sorted[0], end: sorted[sorted.length - 1], digits: g.digitLen });
-    });
     return { ranges, singles: [] };
   }
 
