@@ -469,6 +469,12 @@
   }
   .mode-pill input:disabled{ opacity:0.55; }
 
+  .import-card.sample-card{ border-top-color: var(--amber); }
+  .import-card .import-tag.sample-tag{
+    color:var(--amber-deep);
+    background:rgba(199,120,10,0.12);
+  }
+
   @media (max-width:420px){
     .three-col, .four-col{ grid-template-columns:1fr 1fr; }
   }
@@ -489,6 +495,10 @@
       <div class="mode-pair" id="modeImportPair">
         <label class="mode-pill" id="modeImportLabel"><input type="checkbox" id="modeImportToggle" checked> โหมดนำเข้า</label>
         <button class="lock-btn" id="toggleImportLock" type="button">🔓</button>
+      </div>
+      <div class="mode-pair" id="modeSamplePair">
+        <label class="mode-pill" id="modeSampleLabel"><input type="checkbox" id="modeSampleToggle"> รันเลขจากตัวอย่าง</label>
+        <button class="lock-btn" id="toggleSampleLock" type="button">🔓</button>
       </div>
     </div>
     <button class="reset-top-btn" id="resetBtn">รีเซ็ตทั้งหมด</button>
@@ -512,6 +522,20 @@
       </div>
     </div>
     <div class="import-preview" id="importPreview">ยังไม่มีรายการนำเข้า</div>
+  </div>
+
+  <div id="sampleSection" style="display:none;">
+  <div class="import-card sample-card">
+    <div class="import-head">
+      <span class="import-tag sample-tag">รันเลขจากตัวอย่าง (Sample Run)</span>
+    </div>
+    <label>วาง SN ตัวอย่างหลายชุดลงกล่องเดียว คั่นด้วย คอมม่า/ช่องว่าง/แท็บ/ขึ้นบรรทัดใหม่ก็ได้ — ระบบจัดกลุ่มตาม prefix อัตโนมัติ แล้วรันเลขเต็มช่วงของแต่ละกลุ่ม (step เดาจากช่วงห่างของตัวอย่าง) รวมผลทั้งหมดในลิสต์เดียวตอนกด "สร้างรายการทั้งหมด"</label>
+    <textarea id="sampleInput" rows="9" placeholder="เช่น
+S8N2606A00112, S8N2606A00115
+AB0007 AB0009
+S8N2606A00118"></textarea>
+    <div class="import-preview" id="samplePreview">ยังไม่ได้วางตัวอย่าง</div>
+  </div>
   </div>
 
   <div id="rangeSection">
@@ -567,6 +591,7 @@
   let defaultTemplate = null;
   let modeRangeLocked = false;
   let modeImportLocked = false;
+  let modeSampleLocked = false;
 
   function parseImportText(text){
     return text.split(/[, \t\r\n]+/).map(s => s.trim()).filter(s => s.length > 0);
@@ -594,16 +619,20 @@
   function applyModeVisibility(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
     const importOn = document.getElementById('modeImportToggle').checked;
+    const sampleOn = document.getElementById('modeSampleToggle').checked;
     document.getElementById('modeRangeLabel').classList.toggle('active', rangeOn);
     document.getElementById('modeImportLabel').classList.toggle('active', importOn);
+    document.getElementById('modeSampleLabel').classList.toggle('active', sampleOn);
     document.getElementById('rangeSection').style.display = rangeOn ? '' : 'none';
     document.querySelector('.import-card').style.display = importOn ? '' : 'none';
+    document.getElementById('sampleSection').style.display = sampleOn ? '' : 'none';
   }
 
   function handleModeToggleChange(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
     const importOn = document.getElementById('modeImportToggle').checked;
-    if(!rangeOn && !importOn){
+    const sampleOn = document.getElementById('modeSampleToggle').checked;
+    if(!rangeOn && !importOn && !sampleOn){
       document.getElementById('modeRangeToggle').checked = true;
       showToast('ต้องเปิดอย่างน้อย 1 โหมด เปิด "โหมดสร้างเลขรัน" ให้อัตโนมัติ');
     }
@@ -611,16 +640,21 @@
   }
   document.getElementById('modeRangeToggle').addEventListener('change', handleModeToggleChange);
   document.getElementById('modeImportToggle').addEventListener('change', handleModeToggleChange);
+  document.getElementById('modeSampleToggle').addEventListener('change', handleModeToggleChange);
 
   function updateLockUI(){
     document.getElementById('modeRangeToggle').disabled = modeRangeLocked;
     document.getElementById('modeImportToggle').disabled = modeImportLocked;
+    document.getElementById('modeSampleToggle').disabled = modeSampleLocked;
     document.getElementById('modeRangeLabel').classList.toggle('locked', modeRangeLocked);
     document.getElementById('modeImportLabel').classList.toggle('locked', modeImportLocked);
+    document.getElementById('modeSampleLabel').classList.toggle('locked', modeSampleLocked);
     document.getElementById('modeRangePair').classList.toggle('locked', modeRangeLocked);
     document.getElementById('modeImportPair').classList.toggle('locked', modeImportLocked);
+    document.getElementById('modeSamplePair').classList.toggle('locked', modeSampleLocked);
     document.getElementById('toggleRangeLock').textContent = modeRangeLocked ? '🔒' : '🔓';
     document.getElementById('toggleImportLock').textContent = modeImportLocked ? '🔒' : '🔓';
+    document.getElementById('toggleSampleLock').textContent = modeSampleLocked ? '🔒' : '🔓';
   }
   document.getElementById('toggleRangeLock').addEventListener('click', () => {
     modeRangeLocked = !modeRangeLocked;
@@ -632,11 +666,70 @@
     updateLockUI();
     showToast(modeImportLocked ? 'ล็อคโหมดนำเข้าแล้ว — รีเซ็ตจะล้างแค่โหมดนี้' : 'ปลดล็อคโหมดนำเข้าแล้ว');
   });
+  document.getElementById('toggleSampleLock').addEventListener('click', () => {
+    modeSampleLocked = !modeSampleLocked;
+    updateLockUI();
+    showToast(modeSampleLocked ? 'ล็อคโหมดรันเลขจากตัวอย่างแล้ว — รีเซ็ตจะล้างแค่โหมดนี้' : 'ปลดล็อคโหมดรันเลขจากตัวอย่างแล้ว');
+  });
 
   function csvSafeValue(v){
     // Guards against Excel auto-stripping leading zeros from pure-digit codes on CSV open
     return /^[0-9]+$/.test(v) ? `="${v}"` : v;
   }
+
+  function buildSampleGroups(){
+    const items = parseImportText(document.getElementById('sampleInput').value);
+    const parsed = items.map(splitTrailingDigits).filter(p => p.numStr.length > 0);
+    const byKey = {};
+    parsed.forEach(p => {
+      if(!byKey[p.prefix]) byKey[p.prefix] = { prefix: p.prefix, nums: [], digitLen: 0 };
+      const g = byKey[p.prefix];
+      g.nums.push(parseInt(p.numStr, 10));
+      g.digitLen = Math.max(g.digitLen, p.numStr.length);
+    });
+    const groups = [];
+    Object.values(byKey).forEach(g => {
+      const sorted = g.nums.slice().sort((a, b) => a - b);
+      const start = sorted[0];
+      const end = sorted[sorted.length - 1];
+      let step = 1;
+      if(sorted.length > 2){
+        const diffs = [];
+        for(let i = 1; i < sorted.length; i++) diffs.push(sorted[i] - sorted[i - 1]);
+        const freq = {};
+        diffs.forEach(d => { freq[d] = (freq[d] || 0) + 1; });
+        let best = diffs[0], bestCount = 0;
+        Object.entries(freq).forEach(([d, c]) => { if(c > bestCount){ best = parseInt(d, 10); bestCount = c; } });
+        step = best || 1;
+      }
+      groups.push({ prefix: g.prefix, start, end, step, digits: g.digitLen });
+    });
+    return groups;
+  }
+
+  function buildSampleRows(){
+    const rows = [];
+    buildSampleGroups().forEach(g => {
+      const r = buildOne({ prefix: g.prefix, start: g.start, end: g.end, step: g.step, digits: g.digits });
+      if(r.error) return;
+      r.list.forEach(code => rows.push({ group: g.prefix === '' ? 'ตัวอย่าง' : g.prefix, code }));
+    });
+    return rows;
+  }
+
+  function updateSamplePreview(){
+    const items = parseImportText(document.getElementById('sampleInput').value);
+    const el = document.getElementById('samplePreview');
+    if(items.length === 0){ el.textContent = 'ยังไม่ได้วางตัวอย่าง'; return; }
+    const groups = buildSampleGroups();
+    if(groups.length === 0){ el.textContent = 'วาง SN ที่มีเลขท้ายอย่างน้อย 1 ตัวต่อรายการ (เช่น S8N2606A00112)'; return; }
+    const summary = groups.map(g => {
+      const count = Math.floor(Math.abs(g.end - g.start) / g.step) + 1;
+      return `<b>${g.prefix || '(ไม่มี prefix)'}</b> ${g.start}-${g.end} · step ${g.step} · ${g.digits} หลัก (${count} รายการ)`;
+    }).join(' / ');
+    el.innerHTML = `จัดกลุ่มพบ <b>${groups.length}</b> กลุ่ม: ${summary}`;
+  }
+  document.getElementById('sampleInput').addEventListener('input', updateSamplePreview);
 
   function updateDefaultBanner(){
     const banner = document.getElementById('defaultBanner');
@@ -845,14 +938,14 @@ S8N2606A00134"></textarea>
 
     const rangeOnForCount = document.getElementById('modeRangeToggle').checked;
     const importOnForCount = document.getElementById('modeImportToggle').checked;
-    let baseCountText;
-    if(rangeOnForCount && importOnForCount){
-      baseCountText = `ทั้งหมด <b>${rows.length}</b> รายการ จาก <b>${setsContainer.children.length}</b> ชุด + นำเข้า`;
-    } else if(rangeOnForCount){
-      baseCountText = `ทั้งหมด <b>${rows.length}</b> รายการ จาก <b>${setsContainer.children.length}</b> ชุด`;
-    } else {
-      baseCountText = `ทั้งหมด <b>${rows.length}</b> รายการ (นำเข้า)`;
-    }
+    const sampleOnForCount = document.getElementById('modeSampleToggle').checked;
+    const parts = [];
+    if(rangeOnForCount) parts.push(`<b>${setsContainer.children.length}</b> ชุด`);
+    if(sampleOnForCount) parts.push(`<b>${buildSampleGroups().length}</b> กลุ่มตัวอย่าง`);
+    if(importOnForCount) parts.push('นำเข้า');
+    let baseCountText = parts.length > 0
+      ? `ทั้งหมด <b>${rows.length}</b> รายการ จาก ${parts.join(' + ')}`
+      : `ทั้งหมด <b>${rows.length}</b> รายการ`;
     let countText = dupCount > 0
       ? `ทั้งหมด <b>${rows.length}</b> รายการ · <span class="dup-warn">ชนกัน ${dupCount} รายการ</span>`
       : baseCountText;
@@ -942,6 +1035,7 @@ S8N2606A00134"></textarea>
   function generateAll(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
     const importOn = document.getElementById('modeImportToggle').checked;
+    const sampleOn = document.getElementById('modeSampleToggle').checked;
     let allRows = [];
     let hadError = false;
     if(rangeOn){
@@ -952,6 +1046,9 @@ S8N2606A00134"></textarea>
         if(r.error){ hadError = true; return; }
         r.list.forEach(code => allRows.push({ group: set.tag, code }));
       });
+    }
+    if(sampleOn){
+      buildSampleRows().forEach(r => allRows.push(r));
     }
     if(importOn){
       const prefix = document.getElementById('prefixInput').value;
@@ -1024,12 +1121,15 @@ S8N2606A00134"></textarea>
   });
 
   document.getElementById('resetBtn').addEventListener('click', () => {
-    const noLock = !modeRangeLocked && !modeImportLocked;
+    const noLock = !modeRangeLocked && !modeImportLocked && !modeSampleLocked;
     const clearRange = modeRangeLocked || noLock;
     const clearImport = modeImportLocked || noLock;
-    const what = noLock
-      ? 'ทุกอย่าง (โหมดคงเดิม ไม่สลับ)'
-      : (modeRangeLocked && modeImportLocked ? 'ทั้ง 2 โหมดที่ล็อคไว้ + ผลลัพธ์' : (modeRangeLocked ? 'โหมดสร้างเลขรันที่ล็อคไว้ + ผลลัพธ์' : 'โหมดนำเข้าที่ล็อคไว้ + ผลลัพธ์'));
+    const clearSample = modeSampleLocked || noLock;
+    const lockedNames = [];
+    if(modeRangeLocked) lockedNames.push('โหมดสร้างเลขรัน');
+    if(modeImportLocked) lockedNames.push('โหมดนำเข้า');
+    if(modeSampleLocked) lockedNames.push('โหมดรันเลขจากตัวอย่าง');
+    const what = noLock ? 'ทุกอย่าง (โหมดคงเดิม ไม่สลับ)' : (lockedNames.join(' + ') + ' + ผลลัพธ์');
     if(!window.confirm(`ล้าง${what}? กดตกลงเพื่อยืนยัน`)) return;
     if(clearRange){
       setsContainer.innerHTML = '';
@@ -1043,6 +1143,10 @@ S8N2606A00134"></textarea>
       document.getElementById('prefixInput').value = '';
       document.getElementById('suffixInput').value = '';
       updateImportPreview();
+    }
+    if(clearSample){
+      document.getElementById('sampleInput').value = '';
+      updateSamplePreview();
     }
     renderCombined([]);
     showToast(noLock ? 'รีเซ็ตเรียบร้อย' : 'รีเซ็ตโหมดที่ล็อคเรียบร้อย');
