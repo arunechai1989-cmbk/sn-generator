@@ -72,11 +72,6 @@
   }
   .clock-sep{ color:var(--amber); animation:clockblink 1s step-end infinite; }
   @keyframes clockblink{ 50%{ opacity:0; } }
-  .clock-date{
-    font-size:11px;
-    letter-spacing:0.08em;
-    color:var(--ink-soft);
-  }
 
   h1{
     font-family:'IBM Plex Mono',monospace;
@@ -576,7 +571,6 @@
       <span class="clock-time">
         <span id="clockH">--</span><span class="clock-sep">:</span><span id="clockM">--</span><span class="clock-sep">:</span><span id="clockS">--</span>
       </span>
-      <span class="clock-date" id="clockDate"></span>
     </div>
   </div>
   <div class="app-head">
@@ -816,7 +810,6 @@ S8N2606A00125-S8N2606A00135"></textarea>
     document.getElementById('clockH').textContent = p(now.getHours());
     document.getElementById('clockM').textContent = p(now.getMinutes());
     document.getElementById('clockS').textContent = p(now.getSeconds());
-    document.getElementById('clockDate').textContent = now.toLocaleDateString('th-TH', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
   }
   tickClock();
   setInterval(tickClock, 1000);
