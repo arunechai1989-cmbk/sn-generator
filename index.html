@@ -527,13 +527,12 @@
   <div id="sampleSection" style="display:none;">
   <div class="import-card sample-card">
     <div class="import-head">
-      <span class="import-tag sample-tag">รันเลขจากตัวอย่าง (Sample Run)</span>
+      <span class="import-tag sample-tag">รันเลขจากช่วง (Range Run)</span>
     </div>
-    <label>วาง SN ตัวอย่างหลายชุดลงกล่องเดียว คั่นด้วย คอมม่า/ช่องว่าง/แท็บ/ขึ้นบรรทัดใหม่ก็ได้ — ระบบจัดกลุ่มตาม prefix อัตโนมัติ แล้วรันเลขเต็มช่วงของแต่ละกลุ่ม (step เดาจากช่วงห่างของตัวอย่าง) รวมผลทั้งหมดในลิสต์เดียวตอนกด "สร้างรายการทั้งหมด"</label>
+    <label>วางช่วง SN ได้หลายช่วง คั่นด้วย คอมม่า/ช่องว่าง/แท็บ/ขึ้นบรรทัดใหม่ — ระบบเติมเลขระหว่างกลางให้ครบทุกตัว เช่น <b>S8N2606A00102 - S8N2606A00119</b> ได้ 00102...00119 แล้วรวมผลทุกช่วงในลิสต์เดียวตอนกด "สร้างรายการทั้งหมด"</label>
     <textarea id="sampleInput" rows="9" placeholder="เช่น
-S8N2606A00112, S8N2606A00115
-AB0007 AB0009
-S8N2606A00118"></textarea>
+S8N2606A00102 - S8N2606A00119
+S8N2606A00125-S8N2606A00135"></textarea>
     <div class="import-preview" id="samplePreview">ยังไม่ได้วางตัวอย่าง</div>
   </div>
   </div>
@@ -677,57 +676,56 @@ S8N2606A00118"></textarea>
     return /^[0-9]+$/.test(v) ? `="${v}"` : v;
   }
 
-  function buildSampleGroups(){
-    const items = parseImportText(document.getElementById('sampleInput').value);
-    const parsed = items.map(splitTrailingDigits).filter(p => p.numStr.length > 0);
-    const byKey = {};
-    parsed.forEach(p => {
-      if(!byKey[p.prefix]) byKey[p.prefix] = { prefix: p.prefix, nums: [], digitLen: 0 };
-      const g = byKey[p.prefix];
-      g.nums.push(parseInt(p.numStr, 10));
-      g.digitLen = Math.max(g.digitLen, p.numStr.length);
-    });
-    const groups = [];
-    Object.values(byKey).forEach(g => {
-      const sorted = g.nums.slice().sort((a, b) => a - b);
-      const start = sorted[0];
-      const end = sorted[sorted.length - 1];
-      let step = 1;
-      if(sorted.length > 2){
-        const diffs = [];
-        for(let i = 1; i < sorted.length; i++) diffs.push(sorted[i] - sorted[i - 1]);
-        const freq = {};
-        diffs.forEach(d => { freq[d] = (freq[d] || 0) + 1; });
-        let best = diffs[0], bestCount = 0;
-        Object.entries(freq).forEach(([d, c]) => { if(c > bestCount){ best = parseInt(d, 10); bestCount = c; } });
-        step = best || 1;
+  function parseSampleRanges(){
+    const text = document.getElementById('sampleInput').value;
+    const toks = text.split(/([\s,;\n\r\t]+|[-–—])/).map(t => t.trim()).filter(Boolean);
+    const ranges = [];
+    const singles = [];
+    for(let i = 0; i < toks.length; i++){
+      const t = toks[i];
+      if(t === '-' || t === '–' || t === '—') continue;
+      if(i + 2 < toks.length && (toks[i + 1] === '-' || toks[i + 1] === '–' || toks[i + 1] === '—')){
+        const a = splitTrailingDigits(t);
+        const b = splitTrailingDigits(toks[i + 2]);
+        if(a.numStr.length > 0 && b.numStr.length > 0 && a.prefix === b.prefix){
+          ranges.push({ prefix: a.prefix, start: parseInt(a.numStr, 10), end: parseInt(b.numStr, 10), digits: Math.max(a.numStr.length, b.numStr.length) });
+          i += 2;
+          continue;
+        }
       }
-      groups.push({ prefix: g.prefix, start, end, step, digits: g.digitLen });
-    });
-    return groups;
+      const p = splitTrailingDigits(t);
+      if(p.numStr.length > 0) singles.push(t);
+    }
+    return { ranges, singles };
   }
 
   function buildSampleRows(){
+    const { ranges, singles } = parseSampleRanges();
     const rows = [];
-    buildSampleGroups().forEach(g => {
-      const r = buildOne({ prefix: g.prefix, start: g.start, end: g.end, step: g.step, digits: g.digits });
+    ranges.forEach(g => {
+      const r = buildOne({ prefix: g.prefix, start: g.start, end: g.end, step: 1, digits: g.digits });
       if(r.error) return;
       r.list.forEach(code => rows.push({ group: g.prefix === '' ? 'ตัวอย่าง' : g.prefix, code }));
+    });
+    singles.forEach(s => {
+      const p = splitTrailingDigits(s);
+      rows.push({ group: p.prefix === '' ? 'ตัวอย่าง' : p.prefix, code: s });
     });
     return rows;
   }
 
   function updateSamplePreview(){
-    const items = parseImportText(document.getElementById('sampleInput').value);
+    const text = document.getElementById('sampleInput').value;
     const el = document.getElementById('samplePreview');
-    if(items.length === 0){ el.textContent = 'ยังไม่ได้วางตัวอย่าง'; return; }
-    const groups = buildSampleGroups();
-    if(groups.length === 0){ el.textContent = 'วาง SN ที่มีเลขท้ายอย่างน้อย 1 ตัวต่อรายการ (เช่น S8N2606A00112)'; return; }
-    const summary = groups.map(g => {
-      const count = Math.floor(Math.abs(g.end - g.start) / g.step) + 1;
-      return `<b>${g.prefix || '(ไม่มี prefix)'}</b> ${g.start}-${g.end} · step ${g.step} · ${g.digits} หลัก (${count} รายการ)`;
-    }).join(' / ');
-    el.innerHTML = `จัดกลุ่มพบ <b>${groups.length}</b> กลุ่ม: ${summary}`;
+    if(text.trim() === ''){ el.textContent = 'ยังไม่ได้วางตัวอย่าง'; return; }
+    const { ranges, singles } = parseSampleRanges();
+    const parts = [];
+    ranges.forEach(g => {
+      parts.push(`<b>${g.prefix || '(ไม่มี prefix)'}</b> ${g.start}-${g.end} (${Math.abs(g.end - g.start) + 1} รายการ)`);
+    });
+    if(singles.length) parts.push(`<b>${singles.length}</b> รายการเดี่ยว`);
+    if(parts.length === 0){ el.textContent = 'ไม่พบช่วงเลขหรือ SN ที่ถูกต้อง'; return; }
+    el.innerHTML = `พบ <b>${ranges.length}</b> ช่วง + <b>${singles.length}</b> รายการเดี่ยว: ${parts.join(' / ')}`;
   }
   document.getElementById('sampleInput').addEventListener('input', updateSamplePreview);
 
@@ -941,7 +939,11 @@ S8N2606A00134"></textarea>
     const sampleOnForCount = document.getElementById('modeSampleToggle').checked;
     const parts = [];
     if(rangeOnForCount) parts.push(`<b>${setsContainer.children.length}</b> ชุด`);
-    if(sampleOnForCount) parts.push(`<b>${buildSampleGroups().length}</b> กลุ่มตัวอย่าง`);
+    if(sampleOnForCount){
+      const s = parseSampleRanges();
+      const c = s.ranges.length + s.singles.length;
+      parts.push(`<b>${c}</b> ช่วง/รายการด้านล่าง`);
+    }
     if(importOnForCount) parts.push('นำเข้า');
     let baseCountText = parts.length > 0
       ? `ทั้งหมด <b>${rows.length}</b> รายการ จาก ${parts.join(' + ')}`
