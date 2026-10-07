@@ -558,6 +558,81 @@
     background:rgba(199,120,10,0.12);
   }
 
+  .history-card{
+    border:1px solid var(--line);
+    border-radius:4px;
+    margin:28px 0 24px;
+    overflow:hidden;
+    background:var(--paper);
+  }
+  .history-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:10px 14px;
+    background:rgba(199,120,10,0.06);
+    border-bottom:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    color:var(--ink);
+  }
+  .history-clear{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--err);
+    border:1px solid var(--err);
+    border-radius:2px;
+    background:none;
+    padding:5px 10px;
+    cursor:pointer;
+    flex:none;
+  }
+  .history-clear:hover{ background:rgba(178,58,46,0.08); }
+  .history-empty{
+    padding:16px 14px;
+    font-size:13px;
+    color:var(--ink-soft);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .history-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .history-item:last-child{ border-bottom:none; }
+  .history-meta{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width:0;
+  }
+  .history-time{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+  }
+  .history-summary{ font-size:12.5px; color:var(--ink); }
+  .history-summary b{ color:var(--amber-deep); font-weight:600; }
+  .history-actions{ display:flex; gap:8px; flex:none; }
+  .history-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    padding:5px 10px;
+    border-radius:2px;
+    cursor:pointer;
+    background:none;
+  }
+  .history-btn.load{ border:1px solid var(--amber); color:var(--amber-deep); }
+  .history-btn.load:hover{ background:rgba(199,120,10,0.1); }
+  .history-btn.del{ border:1px solid var(--err); color:var(--err); }
+  .history-btn.del:hover{ background:rgba(178,58,46,0.08); }
+
   @media (max-width:420px){
     .three-col, .four-col{ grid-template-columns:1fr 1fr; }
   }
@@ -696,6 +771,14 @@ S8N2606A00125-S8N2606A00135"></textarea>
     <ol id="listOut" style="display:none;"></ol>
   </div>
 </div>
+
+<div class="history-card">
+    <div class="history-head">
+      <span class="history-title">ประวัติการสร้าง (ล่าสุด 20)</span>
+      <button class="history-clear" id="historyClearBtn" type="button">ล้างทั้งหมด</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
 
 <div class="toast" id="toast"></div>
 
@@ -1201,6 +1284,24 @@ S8N2606A00134"></textarea>
     }
     allRows.forEach((r, i) => { r.origIdx = i + 1; });
     const dupCount = renderCombined(allRows);
+    if(allRows.length > 0){
+      const modeRangeOn = document.getElementById('modeRangeToggle').checked;
+      const modeImportOn = document.getElementById('modeImportToggle').checked;
+      const modeSampleOn = document.getElementById('modeSampleToggle').checked;
+      addHistory({
+        ts: Date.now(),
+        time: historyTimeLabel(new Date()),
+        modes: { range: modeRangeOn, import: modeImportOn, sample: modeSampleOn },
+        sets: Array.from(setsContainer.querySelectorAll('.set-card')).map(readSet),
+        importText: document.getElementById('importInput').value,
+        importCount: parseImportText(document.getElementById('importInput').value).length,
+        prefix: document.getElementById('prefixInput').value,
+        suffix: document.getElementById('suffixInput').value,
+        sampleText: document.getElementById('sampleInput').value,
+        sampleGroups: modeSampleOn ? parseSampleRanges().ranges.length : 0,
+        results: currentRows.map(r => ({ group: r.group, code: r.code }))
+      });
+    }
     if(hadError){
       showToast('บางชุดข้อมูลไม่ครบ ระบบข้ามชุดนั้นให้แล้ว');
     } else if(dupCount > 0){
@@ -1295,9 +1396,103 @@ S8N2606A00134"></textarea>
     showToast(noLock ? 'รีเซ็ตเรียบร้อย' : 'รีเซ็ตโหมดที่ล็อคเรียบร้อย');
   });
 
+  const HISTORY_KEY = 'sn-generator-history';
+  const HISTORY_MAX = 20;
+
+  function loadHistory(){
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch(e){ return []; }
+  }
+  function saveHistory(arr){
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0, HISTORY_MAX))); } catch(e){}
+  }
+  function addHistory(entry){
+    const arr = loadHistory();
+    arr.unshift(entry);
+    saveHistory(arr);
+    renderHistoryList();
+  }
+  function historyTimeLabel(d){
+    const p = n => String(n).padStart(2, '0');
+    return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+  function renderHistoryList(){
+    const arr = loadHistory();
+    const box = document.getElementById('historyList');
+    if(arr.length === 0){
+      box.innerHTML = '<div class="history-empty">ยังไม่มีประวัติ — กด "สร้างรายการทั้งหมด" เพื่อเริ่มบันทึก</div>';
+      return;
+    }
+    box.innerHTML = arr.map((e, i) => {
+      const parts = [];
+      if(e.modes.range) parts.push(`สร้างเลขรัน <b>${e.sets.length}</b> ชุด`);
+      if(e.modes.import) parts.push(`นำเข้า <b>${e.importCount}</b> รายการ`);
+      if(e.modes.sample) parts.push(`ตัวอย่าง <b>${e.sampleGroups}</b> กลุ่ม/ช่วง`);
+      const summary = `${parts.join(' + ')} · ${e.results.length} รายการ`;
+      return `<div class="history-item">
+        <div class="history-meta">
+          <span class="history-time">${e.time}</span>
+          <span class="history-summary">${summary}</span>
+        </div>
+        <div class="history-actions">
+          <button class="history-btn load" data-load="${i}" type="button">โหลด</button>
+          <button class="history-btn del" data-del="${i}" type="button">ลบ</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  function restoreHistory(idx){
+    const arr = loadHistory();
+    const e = arr[idx];
+    if(!e) return;
+    document.getElementById('modeRangeToggle').checked = !!e.modes.range;
+    document.getElementById('modeImportToggle').checked = !!e.modes.import;
+    document.getElementById('modeSampleToggle').checked = !!e.modes.sample;
+    if(!document.getElementById('modeRangeToggle').checked && !document.getElementById('modeImportToggle').checked && !document.getElementById('modeSampleToggle').checked){
+      document.getElementById('modeRangeToggle').checked = true;
+    }
+    applyModeVisibility();
+    setsContainer.innerHTML = '';
+    setCounter = 0;
+    (e.sets || []).forEach(s => makeSetCard(s));
+    document.getElementById('importInput').value = e.importText || '';
+    document.getElementById('prefixInput').value = e.prefix || '';
+    document.getElementById('suffixInput').value = e.suffix || '';
+    updateImportPreview();
+    document.getElementById('sampleInput').value = e.sampleText || '';
+    updateSamplePreview();
+    const rows = (e.results || []).map(r => ({ group: r.group, code: r.code }));
+    rows.forEach((r, i) => { r.origIdx = i + 1; });
+    renderCombined(rows);
+    showToast('โหลดประวัติกลับแล้ว — กด "สร้างรายการทั้งหมด" ได้เลยถ้าต้องการ');
+  }
+  document.getElementById('historyList').addEventListener('click', (ev) => {
+    const loadBtn = ev.target.closest('[data-load]');
+    const delBtn = ev.target.closest('[data-del]');
+    if(loadBtn){ restoreHistory(parseInt(loadBtn.dataset.load, 10)); return; }
+    if(delBtn){
+      const idx = parseInt(delBtn.dataset.del, 10);
+      const arr = loadHistory();
+      if(window.confirm('ลบประวัติรายการนี้?')){
+        arr.splice(idx, 1);
+        saveHistory(arr);
+        renderHistoryList();
+        showToast('ลบประวัติแล้ว');
+      }
+    }
+  });
+  document.getElementById('historyClearBtn').addEventListener('click', () => {
+    const count = loadHistory().length;
+    if(count === 0){ showToast('ยังไม่มีประวัติให้ล้าง'); return; }
+    if(!window.confirm(`ล้างประวัติทั้งหมด (${count} รายการ)?`)) return;
+    saveHistory([]);
+    renderHistoryList();
+    showToast('ล้างประวัติแล้ว');
+  });
+
   makeSetCard({ prefix:'S8N2606A', start:102, end:119, step:1, digits:5 });
   applyModeVisibility();
   updateLockUI();
+  renderHistoryList();
 </script>
 </body>
 </html>
