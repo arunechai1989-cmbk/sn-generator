@@ -411,10 +411,12 @@
     align-items:center;
     justify-content:space-between;
   }
-  .topbar{
+  .app-head{
     display:flex;
-    justify-content:flex-end;
-    margin-bottom:16px;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
   }
   .reset-top-btn{
     font-family:'IBM Plex Mono',monospace;
@@ -487,11 +489,11 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="topbar" id="topBar">
+  <div class="kicker"><span class="dot"></span>SERIAL NUMBER UTILITY — BATCH MODE</div>
+  <div class="app-head">
+    <h1>SN Generator</h1>
     <button class="reset-top-btn" id="resetBtn">รีเซ็ตทั้งหมด</button>
   </div>
-  <div class="kicker"><span class="dot"></span>SERIAL NUMBER UTILITY — BATCH MODE</div>
-  <h1>SN Generator</h1>
   <p class="sub">ตั้งได้หลายชุดพร้อมกัน แต่ละชุดมี prefix / ช่วงเลข / จำนวนหลัก / step เป็นของตัวเอง กดสร้างรวมทีเดียว copy หรือโหลดไฟล์ได้ครบทุกชุด</p>
 
   <div class="mode-toggle-row" id="modeToggleRow">
