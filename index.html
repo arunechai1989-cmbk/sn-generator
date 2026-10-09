@@ -80,13 +80,6 @@
     letter-spacing:-0.01em;
     margin:0 0 4px;
   }
-  .sub{
-    font-size:14px;
-    color:var(--ink-soft);
-    margin:0 0 22px;
-    max-width:50ch;
-    line-height:1.5;
-  }
 
   .sets{ display:flex; flex-direction:column; gap:12px; margin-bottom:14px; }
 
@@ -436,7 +429,7 @@
     gap:10px;
     margin-bottom:18px;
     flex-wrap:wrap;
-    align-items:flex-start;
+    align-items:center;
     justify-content:space-between;
   }
   .app-head{
@@ -449,15 +442,15 @@
   .reset-top-btn{
     font-family:'IBM Plex Mono',monospace;
     font-size:11px;
-    color:var(--ink-soft);
+    color:var(--err);
     background:none;
-    border:1px solid var(--line);
-    border-radius:20px;
-    padding:5px 11px;
+    border:1px solid var(--err);
+    border-radius:2px;
+    padding:7px 12px;
     cursor:pointer;
     flex:none;
   }
-  .reset-top-btn:hover{ color:var(--err); border-color:var(--err); background:rgba(178,58,46,0.08); }
+  .reset-top-btn:hover{ background:rgba(178,58,46,0.08); }
   .mode-pill{
     display:flex;
     align-items:center;
@@ -746,11 +739,11 @@
   </div>
   <div class="app-head">
     <h1>SN Generator</h1>
+    <button class="reset-top-btn" id="resetBtn">รีเซ็ตทั้งหมด</button>
   </div>
-  <p class="sub">ตั้งได้หลายชุดพร้อมกัน แต่ละชุดมี prefix / ช่วงเลข / จำนวนหลัก / step เป็นของตัวเอง กดสร้างรวมทีเดียว copy หรือโหลดไฟล์ได้ครบทุกชุด</p>
 
   <div class="mode-toggle-row" id="modeToggleRow">
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; flex:1 1 auto; min-width:0;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
       <div class="mode-pair" id="modeRangePair">
         <label class="mode-pill" id="modeRangeLabel"><input type="checkbox" id="modeRangeToggle" checked> โหมดสร้างเลขรัน</label>
         <button class="lock-btn" id="toggleRangeLock" type="button">🔓</button>
@@ -767,7 +760,6 @@
         <button class="help-btn" id="helpCaseBtn" type="button" title="คู่มือโหมดแปลงตัวพิมพ์">?</button>
       </div>
 </div>
-    <button class="reset-top-btn" id="resetBtn" type="button" title="รีเซ็ตทั้งหมด" style="align-self:flex-start; margin-top:5px;">⟲ รีเซ็ต</button>
   </div>
 
   <div class="help-panel" id="helpRangePanel">
