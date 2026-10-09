@@ -558,6 +558,29 @@
     background:rgba(199,120,10,0.12);
   }
 
+  .gen-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .gen-tab{
+    flex:1;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .gen-tab.active{
+    border-color:var(--amber);
+    color:var(--ink);
+    background:rgba(199,120,10,0.1);
+    font-weight:600;
+  }
+
   .history-card{
     border:1px solid var(--line);
     border-radius:4px;
@@ -708,16 +731,11 @@
         <button class="lock-btn" id="toggleImportLock" type="button">🔓</button>
         <button class="help-btn" id="helpImportBtn" type="button" title="คู่มือโหมดนำเข้า">?</button>
       </div>
-      <div class="mode-pair" id="modeSamplePair">
-        <label class="mode-pill" id="modeSampleLabel"><input type="checkbox" id="modeSampleToggle"> รันเลขจากตัวอย่าง</label>
-        <button class="lock-btn" id="toggleSampleLock" type="button">🔓</button>
-        <button class="help-btn" id="helpSampleBtn" type="button" title="คู่มือรันเลขจากตัวอย่าง">?</button>
-      </div>
 </div>
   </div>
 
   <div class="help-panel" id="helpRangePanel">
-    <h4>คู่มือ — โหมดสร้างเลขรัน</h4>
+    <h4>คู่มือ — โหมดสร้างเลขรัน (สร้างตามช่วง)</h4>
     <ul>
       <li>แต่ละ <b>ชุด</b> สร้างเลขตาม <code>START</code> → <code>END</code> แล้วรวมทุกชุดในลิสต์เดียวตอนกด <b>"สร้างรายการทั้งหมด"</b> — เพิ่มได้หลายชุดด้วยปุ่ม <b>+ เพิ่มชุด SN</b></li>
       <li><code>PREFIX</code> = ข้อความนำหน้าตัวเลข · <code>STEP</code> = กระโดดทีละ (เช่น 2 = ข้ามเลขคี่) · <code>DIGITS</code> = จำนวนหลัก (ระบบเติมเลข 0 นำหน้าให้เท่ากัน เช่น 5 หลัก → 00102)</li>
@@ -725,6 +743,15 @@
       <li>วาง SN ตัวอย่าง 2 บรรทัดในกล่อง <b>"วาง SN ตัวอย่าง"</b> แล้วกด <b>ตรวจจับอัตโนมัติ</b> → ระบบเดา prefix / ช่วง / หลัก ให้เอง</li>
       <li>กด <b>ตั้งเป็นค่าเริ่มต้น</b> = เก็บชุดนี้เป็นค่าพรีเซ็ตของชุดใหม่ในรอบถัดไป</li>
       <li>ถ้ามีรหัสซ้ำกันระหว่างชุด → ใช้ <b>แสดงเฉพาะที่ชนกัน</b> ดูได้ และ <b>แก้อัตโนมัติ</b> จะเลื่อน range ให้ไม่ชนกัน</li>
+    </ul>
+    <h4 style="margin-top:12px;">คู่มือ — รันเลขจากตัวอย่าง (อยู่ในแท็บที่ 2)</h4>
+    <ul>
+      <li>วาง SN <b>ทีละคู่</b> — ตัวที่ 1 = จุดเริ่ม, ตัวที่ 2 = จุดจบของช่วง → ระบบเติมเลขที่ขาดหายไปของคู่นั้นให้ครบ (step 1)</li>
+      <li>วางคู่ถัดไปต่อได้เรื่อย ๆ คั่นด้วย ช่องว่าง / คอมม่า / แท็บ / ขึ้นบรรทัดใหม่ เช่น วาง <code>S8N2606A00145 S8N2606A00153</code> → ได้ 00145...00153</li>
+      <li>ใช้ dash ระหว่างคู่ก็ได้ เช่น <code>S8N2606A00145-S8N2606A00153</code></li>
+      <li>ถ้าเหลือตัวเลขคี่ (จับคู่ไม่ลงตัว) → ใส่เป็นรายการเดี่ยวในผลลัพธ์</li>
+      <li>SN ที่ prefix ต่างกันจะ<b>ไม่</b>ถูกจับคู่กัน — แต่ละตัวกลายเป็นรายการเดี่ยว</li>
+      <li>กด <b>สร้างรายการทั้งหมด</b> ครั้งเดียว ระบบรวมผลจากทั้ง 2 แท็บให้เลย</li>
     </ul>
   </div>
 
@@ -735,17 +762,6 @@
       <li><b>Prefix</b> / <b>Suffix</b> จะเติมข้อความหน้าและท้ายให้ทุกตัวที่นำเข้า เช่น วาง <code>0012</code> + prefix <code>SN-</code> → <code>SN-0012</code></li>
       <li>เลข <code>0</code> นำหน้าถูกเก็บไว้ตามเดิม — ตอนเปิด CSV/Excel ระบบครอบเป็นข้อความเพื่อไม่ให้ 00 หาย</li>
       <li>เปิดโหมดนี้เฉพาะตอนอยากรวมรหัสที่ไม่ได้สร้างเอง (ถ้าไม่ใช้ก็ปิดได้)</li>
-    </ul>
-  </div>
-
-  <div class="help-panel" id="helpSamplePanel">
-    <h4>คู่มือ — รันเลขจากตัวอย่าง (Range Run)</h4>
-    <ul>
-      <li>วาง SN <b>ทีละคู่</b> — ตัวที่ 1 = จุดเริ่ม, ตัวที่ 2 = จุดจบของช่วง → ระบบเติมเลขที่ขาดหายไปของคู่นั้นให้ครบ (step 1)</li>
-      <li>วางคู่ถัดไปต่อได้เรื่อย ๆ คั่นด้วย ช่องว่าง / คอมม่า / แท็บ / ขึ้นบรรทัดใหม่ เช่น วาง <code>S8N2606A00145 S8N2606A00153</code> → ได้ 00145...00153</li>
-      <li>ใช้ dash ระหว่างคู่ก็ได้ เช่น <code>S8N2606A00145-S8N2606A00153</code></li>
-      <li>ถ้าเหลือตัวเลขคี่ (จับคู่ไม่ลงตัว) → ใส่เป็นรายการเดี่ยวในผลลัพธ์</li>
-      <li>SN ที่ prefix ต่างกันจะ<b>ไม่</b>ถูกจับคู่กัน — แต่ละตัวกลายเป็นรายการเดี่ยว</li>
     </ul>
   </div>
 
@@ -768,7 +784,22 @@
     <div class="import-preview" id="importPreview">ยังไม่มีรายการนำเข้า</div>
   </div>
 
-  <div id="sampleSection" style="display:none;">
+  <div id="rangeSection">
+  <div class="gen-tabs" role="tablist">
+    <button class="gen-tab active" id="tabRangeBtn" type="button">สร้างตามช่วง</button>
+    <button class="gen-tab" id="tabSampleBtn" type="button">รันจากตัวอย่าง</button>
+  </div>
+  <div id="tabRangePane">
+  <div class="default-banner" id="defaultBanner">
+    <span id="defaultBannerText"></span>
+    <button id="clearDefaultBtn">ล้างค่าเริ่มต้น</button>
+  </div>
+  <div class="sets" id="setsContainer"></div>
+  <div style="display:flex; gap:10px; margin-bottom:20px;">
+    <button class="add-row-btn" id="addSetBtn" style="margin-bottom:0;">+ เพิ่มชุด SN</button>
+  </div>
+  </div>
+  <div id="tabSamplePane" style="display:none;">
   <div class="import-card sample-card">
     <div class="import-head">
       <span class="import-tag sample-tag">รันเลขจากช่วง (Range Run)</span>
@@ -778,16 +809,6 @@ S8N2606A00102 - S8N2606A00119
 S8N2606A00125-S8N2606A00135"></textarea>
     <div class="import-preview" id="samplePreview">ยังไม่ได้วางตัวอย่าง</div>
   </div>
-  </div>
-
-  <div id="rangeSection">
-  <div class="default-banner" id="defaultBanner">
-    <span id="defaultBannerText"></span>
-    <button id="clearDefaultBtn">ล้างค่าเริ่มต้น</button>
-  </div>
-  <div class="sets" id="setsContainer"></div>
-  <div style="display:flex; gap:10px; margin-bottom:20px;">
-    <button class="add-row-btn" id="addSetBtn" style="margin-bottom:0;">+ เพิ่มชุด SN</button>
   </div>
   </div>
 
@@ -842,7 +863,7 @@ S8N2606A00125-S8N2606A00135"></textarea>
   let defaultTemplate = null;
   let modeRangeLocked = false;
   let modeImportLocked = false;
-  let modeSampleLocked = false;
+  let activeGenTab = 'range';
 
   function parseImportText(text){
     return text.split(/[, \t\r\n]+/).map(s => s.trim()).filter(s => s.length > 0);
@@ -870,20 +891,16 @@ S8N2606A00125-S8N2606A00135"></textarea>
   function applyModeVisibility(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
     const importOn = document.getElementById('modeImportToggle').checked;
-    const sampleOn = document.getElementById('modeSampleToggle').checked;
     document.getElementById('modeRangeLabel').classList.toggle('active', rangeOn);
     document.getElementById('modeImportLabel').classList.toggle('active', importOn);
-    document.getElementById('modeSampleLabel').classList.toggle('active', sampleOn);
     document.getElementById('rangeSection').style.display = rangeOn ? '' : 'none';
     document.querySelector('.import-card').style.display = importOn ? '' : 'none';
-    document.getElementById('sampleSection').style.display = sampleOn ? '' : 'none';
   }
 
   function handleModeToggleChange(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
     const importOn = document.getElementById('modeImportToggle').checked;
-    const sampleOn = document.getElementById('modeSampleToggle').checked;
-    if(!rangeOn && !importOn && !sampleOn){
+    if(!rangeOn && !importOn){
       document.getElementById('modeRangeToggle').checked = true;
       showToast('ต้องเปิดอย่างน้อย 1 โหมด เปิด "โหมดสร้างเลขรัน" ให้อัตโนมัติ');
     }
@@ -891,21 +908,27 @@ S8N2606A00125-S8N2606A00135"></textarea>
   }
   document.getElementById('modeRangeToggle').addEventListener('change', handleModeToggleChange);
   document.getElementById('modeImportToggle').addEventListener('change', handleModeToggleChange);
-  document.getElementById('modeSampleToggle').addEventListener('change', handleModeToggleChange);
+
+  function switchGenTab(tab){
+    activeGenTab = tab;
+    const isRange = tab === 'range';
+    document.getElementById('tabRangeBtn').classList.toggle('active', isRange);
+    document.getElementById('tabSampleBtn').classList.toggle('active', !isRange);
+    document.getElementById('tabRangePane').style.display = isRange ? '' : 'none';
+    document.getElementById('tabSamplePane').style.display = isRange ? 'none' : '';
+  }
+  document.getElementById('tabRangeBtn').addEventListener('click', () => switchGenTab('range'));
+  document.getElementById('tabSampleBtn').addEventListener('click', () => switchGenTab('sample'));
 
   function updateLockUI(){
     document.getElementById('modeRangeToggle').disabled = modeRangeLocked;
     document.getElementById('modeImportToggle').disabled = modeImportLocked;
-    document.getElementById('modeSampleToggle').disabled = modeSampleLocked;
     document.getElementById('modeRangeLabel').classList.toggle('locked', modeRangeLocked);
     document.getElementById('modeImportLabel').classList.toggle('locked', modeImportLocked);
-    document.getElementById('modeSampleLabel').classList.toggle('locked', modeSampleLocked);
     document.getElementById('modeRangePair').classList.toggle('locked', modeRangeLocked);
     document.getElementById('modeImportPair').classList.toggle('locked', modeImportLocked);
-    document.getElementById('modeSamplePair').classList.toggle('locked', modeSampleLocked);
     document.getElementById('toggleRangeLock').textContent = modeRangeLocked ? '🔒' : '🔓';
     document.getElementById('toggleImportLock').textContent = modeImportLocked ? '🔒' : '🔓';
-    document.getElementById('toggleSampleLock').textContent = modeSampleLocked ? '🔒' : '🔓';
   }
   document.getElementById('toggleRangeLock').addEventListener('click', () => {
     modeRangeLocked = !modeRangeLocked;
@@ -917,13 +940,8 @@ S8N2606A00125-S8N2606A00135"></textarea>
     updateLockUI();
     showToast(modeImportLocked ? 'ล็อคโหมดนำเข้าแล้ว — รีเซ็ตจะล้างแค่โหมดนี้' : 'ปลดล็อคโหมดนำเข้าแล้ว');
   });
-  document.getElementById('toggleSampleLock').addEventListener('click', () => {
-    modeSampleLocked = !modeSampleLocked;
-    updateLockUI();
-    showToast(modeSampleLocked ? 'ล็อคโหมดรันเลขจากตัวอย่างแล้ว — รีเซ็ตจะล้างแค่โหมดนี้' : 'ปลดล็อคโหมดรันเลขจากตัวอย่างแล้ว');
-  });
 
-  const helpMap = [['helpRangeBtn', 'helpRangePanel'], ['helpImportBtn', 'helpImportPanel'], ['helpSampleBtn', 'helpSamplePanel']];
+  const helpMap = [['helpRangeBtn', 'helpRangePanel'], ['helpImportBtn', 'helpImportPanel']];
   helpMap.forEach(([btnId, panelId]) => {
     document.getElementById(btnId).addEventListener('click', () => {
       document.getElementById(panelId).classList.toggle('open');
@@ -1204,12 +1222,11 @@ S8N2606A00134"></textarea>
 
     const rangeOnForCount = document.getElementById('modeRangeToggle').checked;
     const importOnForCount = document.getElementById('modeImportToggle').checked;
-    const sampleOnForCount = document.getElementById('modeSampleToggle').checked;
     const parts = [];
-    if(rangeOnForCount) parts.push(`<b>${setsContainer.children.length}</b> ชุด`);
-    if(sampleOnForCount){
+    if(rangeOnForCount){
       const c = parseSampleRanges().ranges.length;
-      parts.push(`<b>${c}</b> กลุ่ม/ช่วง`);
+      const rangePart = `<b>${setsContainer.children.length}</b> ชุด` + (c > 0 ? ` + <b>${c}</b> กลุ่ม/ช่วง` : '');
+      parts.push(rangePart);
     }
     if(importOnForCount) parts.push('นำเข้า');
     let baseCountText = parts.length > 0
@@ -1304,7 +1321,6 @@ S8N2606A00134"></textarea>
   function generateAll(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
     const importOn = document.getElementById('modeImportToggle').checked;
-    const sampleOn = document.getElementById('modeSampleToggle').checked;
     let allRows = [];
     let hadError = false;
     if(rangeOn){
@@ -1315,8 +1331,6 @@ S8N2606A00134"></textarea>
         if(r.error){ hadError = true; return; }
         r.list.forEach(code => allRows.push({ group: set.tag, code }));
       });
-    }
-    if(sampleOn){
       buildSampleRows().forEach(r => allRows.push(r));
     }
     if(importOn){
@@ -1330,18 +1344,17 @@ S8N2606A00134"></textarea>
     if(allRows.length > 0){
       const modeRangeOn = document.getElementById('modeRangeToggle').checked;
       const modeImportOn = document.getElementById('modeImportToggle').checked;
-      const modeSampleOn = document.getElementById('modeSampleToggle').checked;
       addHistory({
         ts: Date.now(),
         time: historyTimeLabel(new Date()),
-        modes: { range: modeRangeOn, import: modeImportOn, sample: modeSampleOn },
+        modes: { range: modeRangeOn, import: modeImportOn },
         sets: Array.from(setsContainer.querySelectorAll('.set-card')).map(readSet),
         importText: document.getElementById('importInput').value,
         importCount: parseImportText(document.getElementById('importInput').value).length,
         prefix: document.getElementById('prefixInput').value,
         suffix: document.getElementById('suffixInput').value,
         sampleText: document.getElementById('sampleInput').value,
-        sampleGroups: modeSampleOn ? parseSampleRanges().ranges.length : 0,
+        sampleGroups: modeRangeOn ? parseSampleRanges().ranges.length : 0,
         results: currentRows.map(r => ({ group: r.group, code: r.code }))
       });
     }
@@ -1408,14 +1421,12 @@ S8N2606A00134"></textarea>
   });
 
   document.getElementById('resetBtn').addEventListener('click', () => {
-    const noLock = !modeRangeLocked && !modeImportLocked && !modeSampleLocked;
+    const noLock = !modeRangeLocked && !modeImportLocked;
     const clearRange = modeRangeLocked || noLock;
     const clearImport = modeImportLocked || noLock;
-    const clearSample = modeSampleLocked || noLock;
     const lockedNames = [];
     if(modeRangeLocked) lockedNames.push('โหมดสร้างเลขรัน');
     if(modeImportLocked) lockedNames.push('โหมดนำเข้า');
-    if(modeSampleLocked) lockedNames.push('โหมดรันเลขจากตัวอย่าง');
     const what = noLock ? 'ทุกอย่าง (โหมดคงเดิม ไม่สลับ)' : (lockedNames.join(' + ') + ' + ผลลัพธ์');
     if(!window.confirm(`ล้าง${what}? กดตกลงเพื่อยืนยัน`)) return;
     if(clearRange){
@@ -1424,16 +1435,15 @@ S8N2606A00134"></textarea>
       defaultTemplate = null;
       updateDefaultBanner();
       makeSetCard({ prefix:'', start:1, end:10, step:1, digits:5 });
+      document.getElementById('sampleInput').value = '';
+      updateSamplePreview();
+      switchGenTab('range');
     }
     if(clearImport){
       document.getElementById('importInput').value = '';
       document.getElementById('prefixInput').value = '';
       document.getElementById('suffixInput').value = '';
       updateImportPreview();
-    }
-    if(clearSample){
-      document.getElementById('sampleInput').value = '';
-      updateSamplePreview();
     }
     renderCombined([]);
     showToast(noLock ? 'รีเซ็ตเรียบร้อย' : 'รีเซ็ตโหมดที่ล็อคเรียบร้อย');
@@ -1467,9 +1477,14 @@ S8N2606A00134"></textarea>
     }
     box.innerHTML = arr.map((e, i) => {
       const parts = [];
-      if(e.modes.range) parts.push(`สร้างเลขรัน <b>${e.sets.length}</b> ชุด`);
+      const hasRange = e.modes.range || e.modes.sample;
+      const setCount = (e.sets || []).length;
+      const grpCount = e.sampleGroups || 0;
+      if(hasRange){
+        const rangeDetail = grpCount > 0 ? `${setCount} ชุด + ${grpCount} กลุ่ม/ช่วง` : `${setCount} ชุด`;
+        parts.push(`สร้างเลขรัน <b>${rangeDetail}</b>`);
+      }
       if(e.modes.import) parts.push(`นำเข้า <b>${e.importCount}</b> รายการ`);
-      if(e.modes.sample) parts.push(`ตัวอย่าง <b>${e.sampleGroups}</b> กลุ่ม/ช่วง`);
       const summary = `${parts.join(' + ')} · <b>${e.results.length}</b> รายการ`;
       return `<div class="history-item">
         <div class="history-idx">${String(i + 1).padStart(2, '0')}</div>
@@ -1488,10 +1503,10 @@ S8N2606A00134"></textarea>
     const arr = loadHistory();
     const e = arr[idx];
     if(!e) return;
-    document.getElementById('modeRangeToggle').checked = !!e.modes.range;
+    const rangeOn = !!(e.modes.range || e.modes.sample);
+    document.getElementById('modeRangeToggle').checked = rangeOn;
     document.getElementById('modeImportToggle').checked = !!e.modes.import;
-    document.getElementById('modeSampleToggle').checked = !!e.modes.sample;
-    if(!document.getElementById('modeRangeToggle').checked && !document.getElementById('modeImportToggle').checked && !document.getElementById('modeSampleToggle').checked){
+    if(!document.getElementById('modeRangeToggle').checked && !document.getElementById('modeImportToggle').checked){
       document.getElementById('modeRangeToggle').checked = true;
     }
     applyModeVisibility();
@@ -1536,6 +1551,7 @@ S8N2606A00134"></textarea>
   makeSetCard({ prefix:'S8N2606A', start:102, end:119, step:1, digits:5 });
   applyModeVisibility();
   updateLockUI();
+  switchGenTab('range');
   renderHistoryList();
 </script>
 </body>
