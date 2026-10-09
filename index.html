@@ -80,6 +80,18 @@
     letter-spacing:-0.01em;
     margin:0 0 4px;
   }
+  .ver{
+    font-size:12px;
+    font-weight:500;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:2px 9px;
+    vertical-align:middle;
+    margin-left:8px;
+    white-space:nowrap;
+  }
   .sub{
     font-size:14px;
     color:var(--ink-soft);
@@ -746,7 +758,7 @@
     </div>
   </div>
   <div class="app-head">
-    <h1>SN Generator</h1>
+    <h1>SN Generator <span class="ver">v1.0.3</span></h1>
     <button class="reset-top-btn" id="resetBtn">Reset all</button>
   </div>
   <p class="sub">เครื่องมือจัดการ Serial Number: สร้าง นำเข้า และแปลงตัวพิมพ์ รวมเป็นลิสต์เดียวพร้อม export</p>
@@ -788,7 +800,7 @@
       <li>ใช้ dash ระหว่างคู่ก็ได้ เช่น <code>S8N2606A00145-S8N2606A00153</code></li>
       <li>ถ้าเหลือตัวเลขคี่ (จับคู่ไม่ลงตัว) → ใส่เป็นรายการเดี่ยวในผลลัพธ์</li>
       <li>SN ที่ prefix ต่างกันจะ<b>ไม่</b>ถูกจับคู่กัน — แต่ละตัวกลายเป็นรายการเดี่ยว</li>
-      <li>กด <b>สร้างรายการทั้งหมด</b> ครั้งเดียว ระบบรวมผลจากทั้ง 2 แท็บให้เลย</li>
+      <li>กด <b>สร้างรายการทั้งหมด</b> จะสร้างเฉพาะแท็บที่เปิดอยู่ — 2 แท็บใช้งานแยกกัน ไม่รวมผลกัน</li>
     </ul>
   </div>
 
@@ -1330,9 +1342,12 @@ S8N2606A00134"></textarea>
     const caseOnForCount = document.getElementById('modeCaseToggle').checked;
     const parts = [];
     if(rangeOnForCount){
-      const c = parseSampleRanges().ranges.length;
-      const rangePart = `<b>${setsContainer.children.length}</b> ชุด` + (c > 0 ? ` + <b>${c}</b> กลุ่ม/ช่วง` : '');
-      parts.push(rangePart);
+      if(activeGenTab === 'sample'){
+        const c = parseSampleRanges().ranges.length;
+        parts.push(`รันจากตัวอย่าง <b>${c}</b> กลุ่ม/ช่วง`);
+      } else {
+        parts.push(`<b>${setsContainer.children.length}</b> ชุด`);
+      }
     }
     if(importOnForCount) parts.push('นำเข้า');
     if(caseOnForCount) parts.push('แปลงตัวพิมพ์');
@@ -1432,14 +1447,17 @@ S8N2606A00134"></textarea>
     let allRows = [];
     let hadError = false;
     if(rangeOn){
-      const cards = Array.from(setsContainer.querySelectorAll('.set-card'));
-      cards.forEach(card => {
-        const set = readSet(card);
-        const r = buildOne(set);
-        if(r.error){ hadError = true; return; }
-        r.list.forEach(code => allRows.push({ group: set.tag, code }));
-      });
-      buildSampleRows().forEach(r => allRows.push(r));
+      if(activeGenTab === 'sample'){
+        buildSampleRows().forEach(r => allRows.push(r));
+      } else {
+        const cards = Array.from(setsContainer.querySelectorAll('.set-card'));
+        cards.forEach(card => {
+          const set = readSet(card);
+          const r = buildOne(set);
+          if(r.error){ hadError = true; return; }
+          r.list.forEach(code => allRows.push({ group: set.tag, code }));
+        });
+      }
     }
     if(importOn){
       const prefix = document.getElementById('prefixInput').value;
@@ -1460,6 +1478,7 @@ S8N2606A00134"></textarea>
         ts: Date.now(),
         time: historyTimeLabel(new Date()),
         modes: { range: modeRangeOn, import: modeImportOn, case: modeCaseOn },
+        genTab: activeGenTab,
         sets: Array.from(setsContainer.querySelectorAll('.set-card')).map(readSet),
         importText: document.getElementById('importInput').value,
         importCount: parseImportText(document.getElementById('importInput').value).length,
@@ -1603,8 +1622,14 @@ S8N2606A00134"></textarea>
       const setCount = (e.sets || []).length;
       const grpCount = e.sampleGroups || 0;
       if(hasRange){
-        const rangeDetail = grpCount > 0 ? `${setCount} ชุด + ${grpCount} กลุ่ม/ช่วง` : `${setCount} ชุด`;
-        parts.push(`สร้างเลขรัน <b>${rangeDetail}</b>`);
+        if(e.genTab === 'sample'){
+          parts.push(`รันจากตัวอย่าง <b>${grpCount}</b> กลุ่ม/ช่วง`);
+        } else if(e.genTab === 'range'){
+          parts.push(`สร้างเลขรัน <b>${setCount}</b> ชุด`);
+        } else {
+          const rangeDetail = grpCount > 0 ? `${setCount} ชุด + ${grpCount} กลุ่ม/ช่วง` : `${setCount} ชุด`;
+          parts.push(`สร้างเลขรัน <b>${rangeDetail}</b>`);
+        }
       }
       if(e.modes.import) parts.push(`นำเข้า <b>${e.importCount}</b> รายการ`);
       if(e.modes.case) parts.push(`แปลงตัวพิมพ์ <b>${e.caseCount || 0}</b> รายการ`);
@@ -1634,6 +1659,7 @@ S8N2606A00134"></textarea>
       document.getElementById('modeRangeToggle').checked = true;
     }
     applyModeVisibility();
+    switchGenTab(e.genTab === 'sample' ? 'sample' : 'range');
     setsContainer.innerHTML = '';
     setCounter = 0;
     (e.sets || []).forEach(s => makeSetCard(s));
