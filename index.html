@@ -449,15 +449,15 @@
   .reset-top-btn{
     font-family:'IBM Plex Mono',monospace;
     font-size:11px;
-    color:var(--err);
+    color:var(--ink-soft);
     background:none;
-    border:1px solid var(--err);
-    border-radius:2px;
-    padding:7px 12px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:5px 11px;
     cursor:pointer;
     flex:none;
   }
-  .reset-top-btn:hover{ background:rgba(178,58,46,0.08); }
+  .reset-top-btn:hover{ color:var(--err); border-color:var(--err); background:rgba(178,58,46,0.08); }
   .mode-pill{
     display:flex;
     align-items:center;
@@ -746,6 +746,7 @@
   </div>
   <div class="app-head">
     <h1>SN Generator</h1>
+    <button class="reset-top-btn" id="resetBtn" type="button" title="รีเซ็ตทั้งหมด">⟲ รีเซ็ต</button>
   </div>
   <p class="sub">ตั้งได้หลายชุดพร้อมกัน แต่ละชุดมี prefix / ช่วงเลข / จำนวนหลัก / step เป็นของตัวเอง กดสร้างรวมทีเดียว copy หรือโหลดไฟล์ได้ครบทุกชุด</p>
 
@@ -767,7 +768,6 @@
         <button class="help-btn" id="helpCaseBtn" type="button" title="คู่มือโหมดแปลงตัวพิมพ์">?</button>
       </div>
 </div>
-    <button class="reset-top-btn" id="resetBtn">รีเซ็ตทั้งหมด</button>
   </div>
 
   <div class="help-panel" id="helpRangePanel">
