@@ -558,6 +558,37 @@
     background:rgba(199,120,10,0.12);
   }
 
+  .import-card.case-card{ border-top-color: #6C5CE7; }
+  .import-card .import-tag.case-tag{
+    color:#4834B8;
+    background:rgba(108,92,231,0.12);
+  }
+  .case-dir-row{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+    flex-wrap:wrap;
+  }
+  .case-dir{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:8px 13px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    cursor:pointer;
+    color:var(--ink-soft);
+    user-select:none;
+  }
+  .case-dir.active{
+    border-color:#6C5CE7;
+    color:var(--ink);
+    background:rgba(108,92,231,0.1);
+    font-weight:600;
+  }
+  .case-dir input{ accent-color:#6C5CE7; cursor:pointer; }
   .gen-tabs{
     display:flex;
     gap:8px;
@@ -731,6 +762,11 @@
         <button class="lock-btn" id="toggleImportLock" type="button">🔓</button>
         <button class="help-btn" id="helpImportBtn" type="button" title="คู่มือโหมดนำเข้า">?</button>
       </div>
+      <div class="mode-pair" id="modeCasePair">
+        <label class="mode-pill" id="modeCaseLabel"><input type="checkbox" id="modeCaseToggle"> โหมดแปลงตัวพิมพ์</label>
+        <button class="lock-btn" id="toggleCaseLock" type="button">🔓</button>
+        <button class="help-btn" id="helpCaseBtn" type="button" title="คู่มือโหมดแปลงตัวพิมพ์">?</button>
+      </div>
 </div>
   </div>
 
@@ -765,7 +801,17 @@
     </ul>
   </div>
 
-  <div class="import-card">
+  <div class="help-panel" id="helpCasePanel">
+    <h4>คู่มือ — โหมดแปลงตัวพิมพ์</h4>
+    <ul>
+      <li>วาง text ลงกล่อง คั่นด้วย <b>คอมม่า / ช่องว่าง / แท็บ / ขึ้นบรรทัดใหม่</b> ได้หมด — เช่น <code>s8n2606a00102</code></li>
+      <li>เลือกทิศทาง <b>พิมพ์ใหญ่ (UPPER)</b> หรือ <b>พิมพ์เล็ก (lower)</b> แล้วกด <b>"สร้างรายการทั้งหมด"</b> ระบบแปลงให้ทุกตัวแล้วรวมเข้าผลลัพธ์</li>
+      <li>ภาษาไทยไม่มีตัวพิมพ์เล็ก/ใหญ่ ระบบจะคงข้อความเดิมไว้ให้</li>
+      <li>เปิดโหมดนี้เฉพาะตอนอยากแปลง (ถ้าไม่ใช้ก็ปิดได้)</li>
+    </ul>
+  </div>
+
+  <div class="import-card" id="importCard">
     <div class="import-head">
       <span class="import-tag">นำเข้า (Import)</span>
     </div>
@@ -809,6 +855,22 @@ S8N2606A00102 - S8N2606A00119
 S8N2606A00125-S8N2606A00135"></textarea>
     <div class="import-preview" id="samplePreview">ยังไม่ได้วางตัวอย่าง</div>
   </div>
+  </div>
+  </div>
+
+  <div id="caseSection" style="display:none;">
+  <div class="import-card case-card">
+    <div class="import-head">
+      <span class="import-tag case-tag">แปลงตัวพิมพ์ (Aa)</span>
+    </div>
+    <textarea id="caseInput" rows="9" placeholder="เช่น
+s8n2606a00102,s8n2606a00104
+s8n2606a00108"></textarea>
+    <div class="case-dir-row">
+      <label class="case-dir active" id="caseUpperLabel"><input type="radio" name="caseDir" id="caseUpperRadio" checked> พิมพ์ใหญ่ (UPPER)</label>
+      <label class="case-dir" id="caseLowerLabel"><input type="radio" name="caseDir" id="caseLowerRadio"> พิมพ์เล็ก (lower)</label>
+    </div>
+    <div class="import-preview" id="casePreview">ยังไม่มีรายการแปลงตัวพิมพ์</div>
   </div>
   </div>
 
@@ -863,6 +925,7 @@ S8N2606A00125-S8N2606A00135"></textarea>
   let defaultTemplate = null;
   let modeRangeLocked = false;
   let modeImportLocked = false;
+  let modeCaseLocked = false;
   let activeGenTab = 'range';
 
   function parseImportText(text){
@@ -888,19 +951,50 @@ S8N2606A00125-S8N2606A00135"></textarea>
   document.getElementById('prefixInput').addEventListener('input', updateImportPreview);
   document.getElementById('suffixInput').addEventListener('input', updateImportPreview);
 
+  function getCaseDirection(){
+    return document.getElementById('caseLowerRadio').checked ? 'lower' : 'upper';
+  }
+  function convertCaseItem(s, dir){
+    return dir === 'lower' ? s.toLowerCase() : s.toUpperCase();
+  }
+  function buildCaseRows(){
+    const dir = getCaseDirection();
+    return parseImportText(document.getElementById('caseInput').value)
+      .map(code => ({ group: 'แปลงตัวพิมพ์', code: convertCaseItem(code, dir) }));
+  }
+  function updateCasePreview(){
+    const items = parseImportText(document.getElementById('caseInput').value);
+    const dir = getCaseDirection();
+    const el = document.getElementById('casePreview');
+    document.getElementById('caseUpperLabel').classList.toggle('active', dir === 'upper');
+    document.getElementById('caseLowerLabel').classList.toggle('active', dir === 'lower');
+    if(items.length === 0){ el.textContent = 'ยังไม่มีรายการแปลงตัวพิมพ์'; return; }
+    const fmt = (it) => convertCaseItem(it, dir);
+    el.innerHTML = items.length === 1
+      ? `พบ <b>1</b> รายการ: <b>${fmt(items[0])}</b> (${dir === 'upper' ? 'พิมพ์ใหญ่' : 'พิมพ์เล็ก'})`
+      : `พบ <b>${items.length}</b> รายการ — <b>${fmt(items[0])}</b> ... <b>${fmt(items[items.length - 1])}</b> (${dir === 'upper' ? 'พิมพ์ใหญ่' : 'พิมพ์เล็ก'})`;
+  }
+  document.getElementById('caseInput').addEventListener('input', updateCasePreview);
+  document.getElementById('caseUpperRadio').addEventListener('change', updateCasePreview);
+  document.getElementById('caseLowerRadio').addEventListener('change', updateCasePreview);
+
   function applyModeVisibility(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
     const importOn = document.getElementById('modeImportToggle').checked;
+    const caseOn = document.getElementById('modeCaseToggle').checked;
     document.getElementById('modeRangeLabel').classList.toggle('active', rangeOn);
     document.getElementById('modeImportLabel').classList.toggle('active', importOn);
+    document.getElementById('modeCaseLabel').classList.toggle('active', caseOn);
     document.getElementById('rangeSection').style.display = rangeOn ? '' : 'none';
-    document.querySelector('.import-card').style.display = importOn ? '' : 'none';
+    document.getElementById('importCard').style.display = importOn ? '' : 'none';
+    document.getElementById('caseSection').style.display = caseOn ? '' : 'none';
   }
 
   function handleModeToggleChange(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
     const importOn = document.getElementById('modeImportToggle').checked;
-    if(!rangeOn && !importOn){
+    const caseOn = document.getElementById('modeCaseToggle').checked;
+    if(!rangeOn && !importOn && !caseOn){
       document.getElementById('modeRangeToggle').checked = true;
       showToast('ต้องเปิดอย่างน้อย 1 โหมด เปิด "โหมดสร้างเลขรัน" ให้อัตโนมัติ');
     }
@@ -908,6 +1002,7 @@ S8N2606A00125-S8N2606A00135"></textarea>
   }
   document.getElementById('modeRangeToggle').addEventListener('change', handleModeToggleChange);
   document.getElementById('modeImportToggle').addEventListener('change', handleModeToggleChange);
+  document.getElementById('modeCaseToggle').addEventListener('change', handleModeToggleChange);
 
   function switchGenTab(tab){
     activeGenTab = tab;
@@ -923,12 +1018,16 @@ S8N2606A00125-S8N2606A00135"></textarea>
   function updateLockUI(){
     document.getElementById('modeRangeToggle').disabled = modeRangeLocked;
     document.getElementById('modeImportToggle').disabled = modeImportLocked;
+    document.getElementById('modeCaseToggle').disabled = modeCaseLocked;
     document.getElementById('modeRangeLabel').classList.toggle('locked', modeRangeLocked);
     document.getElementById('modeImportLabel').classList.toggle('locked', modeImportLocked);
+    document.getElementById('modeCaseLabel').classList.toggle('locked', modeCaseLocked);
     document.getElementById('modeRangePair').classList.toggle('locked', modeRangeLocked);
     document.getElementById('modeImportPair').classList.toggle('locked', modeImportLocked);
+    document.getElementById('modeCasePair').classList.toggle('locked', modeCaseLocked);
     document.getElementById('toggleRangeLock').textContent = modeRangeLocked ? '🔒' : '🔓';
     document.getElementById('toggleImportLock').textContent = modeImportLocked ? '🔒' : '🔓';
+    document.getElementById('toggleCaseLock').textContent = modeCaseLocked ? '🔒' : '🔓';
   }
   document.getElementById('toggleRangeLock').addEventListener('click', () => {
     modeRangeLocked = !modeRangeLocked;
@@ -940,8 +1039,13 @@ S8N2606A00125-S8N2606A00135"></textarea>
     updateLockUI();
     showToast(modeImportLocked ? 'ล็อคโหมดนำเข้าแล้ว — รีเซ็ตจะล้างแค่โหมดนี้' : 'ปลดล็อคโหมดนำเข้าแล้ว');
   });
+  document.getElementById('toggleCaseLock').addEventListener('click', () => {
+    modeCaseLocked = !modeCaseLocked;
+    updateLockUI();
+    showToast(modeCaseLocked ? 'ล็อคโหมดแปลงตัวพิมพ์แล้ว — รีเซ็ตจะล้างแค่โหมดนี้' : 'ปลดล็อคโหมดแปลงตัวพิมพ์แล้ว');
+  });
 
-  const helpMap = [['helpRangeBtn', 'helpRangePanel'], ['helpImportBtn', 'helpImportPanel']];
+  const helpMap = [['helpRangeBtn', 'helpRangePanel'], ['helpImportBtn', 'helpImportPanel'], ['helpCaseBtn', 'helpCasePanel']];
   helpMap.forEach(([btnId, panelId]) => {
     document.getElementById(btnId).addEventListener('click', () => {
       document.getElementById(panelId).classList.toggle('open');
@@ -1222,6 +1326,7 @@ S8N2606A00134"></textarea>
 
     const rangeOnForCount = document.getElementById('modeRangeToggle').checked;
     const importOnForCount = document.getElementById('modeImportToggle').checked;
+    const caseOnForCount = document.getElementById('modeCaseToggle').checked;
     const parts = [];
     if(rangeOnForCount){
       const c = parseSampleRanges().ranges.length;
@@ -1229,6 +1334,7 @@ S8N2606A00134"></textarea>
       parts.push(rangePart);
     }
     if(importOnForCount) parts.push('นำเข้า');
+    if(caseOnForCount) parts.push('แปลงตัวพิมพ์');
     let baseCountText = parts.length > 0
       ? `ทั้งหมด <b>${rows.length}</b> รายการ จาก ${parts.join(' + ')}`
       : `ทั้งหมด <b>${rows.length}</b> รายการ`;
@@ -1321,6 +1427,7 @@ S8N2606A00134"></textarea>
   function generateAll(){
     const rangeOn = document.getElementById('modeRangeToggle').checked;
     const importOn = document.getElementById('modeImportToggle').checked;
+    const caseOn = document.getElementById('modeCaseToggle').checked;
     let allRows = [];
     let hadError = false;
     if(rangeOn){
@@ -1339,15 +1446,19 @@ S8N2606A00134"></textarea>
       const importedItems = parseImportText(document.getElementById('importInput').value);
       importedItems.forEach(code => allRows.push({ group: 'นำเข้า', code: prefix + code + suffix }));
     }
+    if(caseOn){
+      buildCaseRows().forEach(r => allRows.push(r));
+    }
     allRows.forEach((r, i) => { r.origIdx = i + 1; });
     const dupCount = renderCombined(allRows);
     if(allRows.length > 0){
       const modeRangeOn = document.getElementById('modeRangeToggle').checked;
       const modeImportOn = document.getElementById('modeImportToggle').checked;
+      const modeCaseOn = document.getElementById('modeCaseToggle').checked;
       addHistory({
         ts: Date.now(),
         time: historyTimeLabel(new Date()),
-        modes: { range: modeRangeOn, import: modeImportOn },
+        modes: { range: modeRangeOn, import: modeImportOn, case: modeCaseOn },
         sets: Array.from(setsContainer.querySelectorAll('.set-card')).map(readSet),
         importText: document.getElementById('importInput').value,
         importCount: parseImportText(document.getElementById('importInput').value).length,
@@ -1355,6 +1466,9 @@ S8N2606A00134"></textarea>
         suffix: document.getElementById('suffixInput').value,
         sampleText: document.getElementById('sampleInput').value,
         sampleGroups: modeRangeOn ? parseSampleRanges().ranges.length : 0,
+        caseText: document.getElementById('caseInput').value,
+        caseDir: getCaseDirection(),
+        caseCount: modeCaseOn ? parseImportText(document.getElementById('caseInput').value).length : 0,
         results: currentRows.map(r => ({ group: r.group, code: r.code }))
       });
     }
@@ -1421,12 +1535,14 @@ S8N2606A00134"></textarea>
   });
 
   document.getElementById('resetBtn').addEventListener('click', () => {
-    const noLock = !modeRangeLocked && !modeImportLocked;
+    const noLock = !modeRangeLocked && !modeImportLocked && !modeCaseLocked;
     const clearRange = modeRangeLocked || noLock;
     const clearImport = modeImportLocked || noLock;
+    const clearCase = modeCaseLocked || noLock;
     const lockedNames = [];
     if(modeRangeLocked) lockedNames.push('โหมดสร้างเลขรัน');
     if(modeImportLocked) lockedNames.push('โหมดนำเข้า');
+    if(modeCaseLocked) lockedNames.push('โหมดแปลงตัวพิมพ์');
     const what = noLock ? 'ทุกอย่าง (โหมดคงเดิม ไม่สลับ)' : (lockedNames.join(' + ') + ' + ผลลัพธ์');
     if(!window.confirm(`ล้าง${what}? กดตกลงเพื่อยืนยัน`)) return;
     if(clearRange){
@@ -1444,6 +1560,11 @@ S8N2606A00134"></textarea>
       document.getElementById('prefixInput').value = '';
       document.getElementById('suffixInput').value = '';
       updateImportPreview();
+    }
+    if(clearCase){
+      document.getElementById('caseInput').value = '';
+      document.getElementById('caseUpperRadio').checked = true;
+      updateCasePreview();
     }
     renderCombined([]);
     showToast(noLock ? 'รีเซ็ตเรียบร้อย' : 'รีเซ็ตโหมดที่ล็อคเรียบร้อย');
@@ -1485,6 +1606,7 @@ S8N2606A00134"></textarea>
         parts.push(`สร้างเลขรัน <b>${rangeDetail}</b>`);
       }
       if(e.modes.import) parts.push(`นำเข้า <b>${e.importCount}</b> รายการ`);
+      if(e.modes.case) parts.push(`แปลงตัวพิมพ์ <b>${e.caseCount || 0}</b> รายการ`);
       const summary = `${parts.join(' + ')} · <b>${e.results.length}</b> รายการ`;
       return `<div class="history-item">
         <div class="history-idx">${String(i + 1).padStart(2, '0')}</div>
@@ -1506,7 +1628,8 @@ S8N2606A00134"></textarea>
     const rangeOn = !!(e.modes.range || e.modes.sample);
     document.getElementById('modeRangeToggle').checked = rangeOn;
     document.getElementById('modeImportToggle').checked = !!e.modes.import;
-    if(!document.getElementById('modeRangeToggle').checked && !document.getElementById('modeImportToggle').checked){
+    document.getElementById('modeCaseToggle').checked = !!e.modes.case;
+    if(!document.getElementById('modeRangeToggle').checked && !document.getElementById('modeImportToggle').checked && !document.getElementById('modeCaseToggle').checked){
       document.getElementById('modeRangeToggle').checked = true;
     }
     applyModeVisibility();
@@ -1519,6 +1642,10 @@ S8N2606A00134"></textarea>
     updateImportPreview();
     document.getElementById('sampleInput').value = e.sampleText || '';
     updateSamplePreview();
+    document.getElementById('caseInput').value = e.caseText || '';
+    if(e.caseDir === 'lower'){ document.getElementById('caseLowerRadio').checked = true; }
+    else { document.getElementById('caseUpperRadio').checked = true; }
+    updateCasePreview();
     const rows = (e.results || []).map(r => ({ group: r.group, code: r.code }));
     rows.forEach((r, i) => { r.origIdx = i + 1; });
     renderCombined(rows);
@@ -1552,6 +1679,7 @@ S8N2606A00134"></textarea>
   applyModeVisibility();
   updateLockUI();
   switchGenTab('range');
+  updateCasePreview();
   renderHistoryList();
 </script>
 </body>
